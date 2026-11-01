@@ -70,3 +70,10 @@ def test_voice_error_from_module_exits_1(episode, monkeypatch, capsys):
     monkeypatch.setattr(cli.voice_mod, "voice_episode", boom)
     assert main(["voice", str(episode)]) == 1
     assert capsys.readouterr().out.strip() == "voice: ffprobe said garbage"
+
+
+def test_voice_unsafe_manifest_stem_exits_1(tmp_path, capsys):
+    unsafe = tmp_path / "...yaml"
+    unsafe.write_text("x: 1\n", encoding="utf-8")
+    assert main(["voice", str(unsafe)]) == 1
+    assert capsys.readouterr().out.strip() == "voice: manifest name must not be '.' or '..'"

@@ -298,3 +298,96 @@ def test_integration_voice_then_render_audio_matches_plan(episode):
         check=True,
     )
     assert float(out.stdout.decode().split()[0]) == pytest.approx(plan_runtime(plan), abs=0.2)
+
+
+def test_zero_byte_audio_with_matching_key_is_resynthesized(episode):
+    run(episode, FakeSynth())
+    first = episode.parent / "media/voice/episode/p01-l01.mp3"
+    first.write_bytes(b"")
+
+    def measure(path: Path) -> float:
+        if path.stat().st_size == 0:
+            raise VoiceError("ffprobe gave no duration")
+        return fake_measure(path)
+
+    synth = FakeSynth()
+    result = voice_episode(episode, synth=synth, measure=measure)
+    assert len(synth.calls) == 1
+    assert result.failures == ()
+    assert result.voiced == 1
+    assert result.skipped == len(all_lines(load(episode))) - 1
+    line = load(episode)["panels"][0]["lines"][0]
+    assert line["duration"] == tone_seconds(line["text"])
+
+
+def test_cache_miss_that_fails_again_is_recorded_once(episode):
+    run(episode, FakeSynth())
+    (episode.parent / "media/voice/episode/p01-l01.mp3").write_bytes(b"")
+
+    def bad_measure(path: Path) -> float:
+        if path.stat().st_size == 0:
+            raise VoiceError("still broken")
+        return fake_measure(path)
+
+    class ZeroSynth(FakeSynth):
+        def __call__(self, text, voice, out_path):
+            self.calls.append((text, voice))
+            out_path.write_bytes(b"")
+
+    synth = ZeroSynth()
+    result = voice_episode(episode, synth=synth, measure=bad_measure)
+    assert len(synth.calls) == 1
+    assert len(result.failures) == 1
+    assert result.failures[0].startswith("panel 1 line 1: VoiceError: still broken")
+
+
+def test_programming_error_in_bookkeeping_propagates(episode, monkeypatch):
+    def boom(voice: str, text: str) -> str:
+        raise RuntimeError("bug in voice_episode bookkeeping")
+
+    monkeypatch.setattr(voice_mod, "line_key", boom)
+    with pytest.raises(RuntimeError, match="bookkeeping"):
+        run(episode, FakeSynth())
+
+
+@pytest.mark.parametrize("stem", ["..", "."])
+def test_unsafe_manifest_stem_is_rejected(tmp_path, stem):
+    unsafe = tmp_path / f"{stem}.yaml"
+    unsafe.write_text("x: 1\n", encoding="utf-8")
+    assert unsafe.stem == stem
+    with pytest.raises(VoiceError, match="manifest name must not be"):
+        voice_episode(unsafe, synth=FakeSynth(), measure=fake_measure)
+
+
+def test_integration_voiced_segment_audio_is_not_silence(episode):
+    require_smoke()
+    result = voice_episode(episode, synth=FakeSynth(real=True))
+    assert result.failures == ()
+    plan = build_plan(load(episode), episode.parent)
+    first = plan.segments[0]
+    assert first.kind == "panel" and first.audio
+    render(plan)
+    probe = subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "info",
+            "-t",
+            f"{first.duration_s:.3f}",
+            "-i",
+            str(plan.output),
+            "-vn",
+            "-af",
+            "volumedetect",
+            "-f",
+            "null",
+            "-",
+        ],
+        capture_output=True,
+        check=True,
+    )
+    stderr = probe.stderr.decode("utf-8", errors="replace")
+    marker = "mean_volume:"
+    assert marker in stderr
+    mean = float(stderr.split(marker)[1].split("dB")[0])
+    assert mean > -60.0
