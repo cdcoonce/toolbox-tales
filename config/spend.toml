@@ -1,0 +1,14 @@
+# Spend guard caps and model ids. Every paid call goes through toolbox_tales.spend.
+per_call_cap_usd = 3.0
+total_cap_usd = 25.0
+
+[models]
+image = "flux-2-dev"
+video = ""      # set after the live price check (Kling O3 Pro reference-to-video id)
+
+[script]
+model = ""      # Claude model id for slice 7
+input_usd_per_mtok = 0.0   # 0.0 means unpriced
+output_usd_per_mtok = 0.0
+est_input_tokens = 4000
+est_output_tokens = 1500

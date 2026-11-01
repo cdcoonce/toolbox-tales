@@ -7,13 +7,13 @@ from toolbox_tales.spend import Estimate, SpendConfig, authorize, estimate, load
 
 
 def prices(**kw):
-    base = dict(
-        cost_per_image=None,
-        cost_per_second=None,
-        input_cost_per_token=None,
-        output_cost_per_token=None,
-        raw={},
-    )
+    base = {
+        "cost_per_image": None,
+        "cost_per_second": None,
+        "input_cost_per_token": None,
+        "output_cost_per_token": None,
+        "raw": {},
+    }
     base.update(kw)
     return Prices(**base)
 

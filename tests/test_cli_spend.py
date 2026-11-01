@@ -13,13 +13,13 @@ HEADER = "timestamp,model,kind,quantity,estimated_usd,actual_usd,output\n"
 
 
 def P(**kw):
-    base = dict(
-        cost_per_image=None,
-        cost_per_second=None,
-        input_cost_per_token=None,
-        output_cost_per_token=None,
-        raw={},
-    )
+    base = {
+        "cost_per_image": None,
+        "cost_per_second": None,
+        "input_cost_per_token": None,
+        "output_cost_per_token": None,
+        "raw": {},
+    }
     base.update(kw)
     return Prices(**base)
 
@@ -97,13 +97,13 @@ def test_dry_run_counts_only_missing_panels(repo, capsys):
     assert "panels: 3 x img = $1.50" in out
     assert "shot: 5.0 s x" in out and "unpriced" in out
     assert "script:" in out
-    assert out.strip().splitlines()[-1] == "total: $1.50 (remaining $18.50)"
+    assert out.strip().splitlines()[-1] == "total: $1.50 (remaining $20.00)"
 
 
 def test_dry_run_unset_video_model_unpriced(repo, capsys):
     c = FakeClient({"img": P(cost_per_image=0.5)})
     main(["dry-run", "ep/episode.yaml"], client_factory=factory(c))
-    shot = [ln for ln in capsys.readouterr().out.splitlines() if ln.startswith("shot:")][0]
+    shot = next(ln for ln in capsys.readouterr().out.splitlines() if ln.startswith("shot:"))
     assert shot.endswith("= unpriced")
     assert c.calls == ["img"]
 

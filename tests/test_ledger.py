@@ -69,7 +69,7 @@ def _write(p, *rows):
 @pytest.mark.parametrize("bad", ["abc", "nan", "inf", "-1"])
 def test_bad_estimated_raises_with_line(tmp_path, bad):
     p = tmp_path / "spend.csv"
-    _write(p, f"t,m,image,1,1.0,,a", f"t,m,image,1,{bad},,b")
+    _write(p, "t,m,image,1,1.0,,a", f"t,m,image,1,{bad},,b")
     with pytest.raises(LedgerError, match="line 3"):
         Ledger(p).total_spent()
 
