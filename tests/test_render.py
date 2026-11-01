@@ -2,7 +2,6 @@
 
 import copy
 import json
-import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -10,6 +9,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from smoke_gate import require_smoke
 from toolbox_tales.manifest import PANEL_PADDING_S, SHOT_ALLOWANCE_S
 from toolbox_tales.render import (
     DEFAULT_LINE_S,
@@ -25,15 +25,16 @@ FIXTURES = Path(__file__).parent / "fixtures"
 HOSTILE = "a:b'c\\%{x}"
 
 
-def ffmpeg_missing() -> bool:
-    return shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None
+def ok_runner(calls=None):
+    """A fake runner whose ffmpeg advertises drawtext and accepts every command."""
 
+    def runner(args, **kwargs):
+        if calls is not None:
+            calls.append(list(args))
+        out = b" T.. drawtext  V->V  Draw text.\n" if "-filters" in args else b""
+        return subprocess.CompletedProcess(args, 0, out, b"")
 
-def require_ffmpeg() -> None:
-    if ffmpeg_missing():
-        if os.environ.get("CI"):
-            pytest.fail("ffmpeg and ffprobe must be installed under CI")
-        pytest.skip("ffmpeg not installed")
+    return runner
 
 
 @pytest.fixture
@@ -153,6 +154,7 @@ def hostile_plan(tmp_path: Path) -> Plan:
 
 def test_text_never_inline_in_ffmpeg_args(tmp_path):
     calls = []
+    inner = ok_runner()
 
     def runner(args, **kwargs):
         calls.append(list(args))
@@ -161,7 +163,7 @@ def test_text_never_inline_in_ffmpeg_args(tmp_path):
             for part in arg.split("textfile=")[1:]:
                 path = part.split(":")[0].split(",")[0].strip("'")
                 assert Path(path).exists()
-        return subprocess.CompletedProcess(args, 0, b"", b"")
+        return inner(args, **kwargs)
 
     render(hostile_plan(tmp_path), runner=runner)
     assert calls
@@ -174,11 +176,65 @@ def test_text_never_inline_in_ffmpeg_args(tmp_path):
 
 
 def test_render_error_carries_stderr_tail(tmp_path):
+    inner = ok_runner()
+
     def runner(args, **kwargs):
+        if "-filters" in args:
+            return inner(args, **kwargs)
         return subprocess.CompletedProcess(args, 1, b"", b"boom: bad filter")
 
     with pytest.raises(RenderError, match="boom: bad filter"):
         render(hostile_plan(tmp_path), runner=runner)
+
+
+def no_drawtext_runner(calls):
+    def runner(args, **kwargs):
+        calls.append(list(args))
+        if "-filters" in args:
+            return subprocess.CompletedProcess(args, 0, b" T.. scale  V->V  Scale.\n", b"")
+        return subprocess.CompletedProcess(args, 1, b"", b"No such filter: 'drawtext'")
+
+    return runner
+
+
+def test_render_without_drawtext_raises(tmp_path):
+    plan = hostile_plan(tmp_path)
+    with pytest.raises(RenderError, match="drawtext") as info:
+        render(plan, runner=no_drawtext_runner([]))
+    assert "install an ffmpeg built with freetype (drawtext)" in str(info.value)
+    assert not plan.output.exists()
+
+
+def test_no_text_fallback_run(tmp_path):
+    calls = []
+    with pytest.raises(RenderError):
+        render(hostile_plan(tmp_path), runner=no_drawtext_runner(calls))
+    assert calls == [calls[0]]
+    assert "-filters" in calls[0]
+
+
+def test_render_checks_drawtext_before_any_segment(tmp_path):
+    calls = []
+    render(hostile_plan(tmp_path), runner=ok_runner(calls))
+    assert "-filters" in calls[0]
+    assert "-hide_banner" in calls[0]
+    assert all("-filters" not in c for c in calls[1:])
+
+
+def _shot_duration(manifest, tmp_path, value):
+    manifest["arrival_shot"]["duration"] = value
+    return build_plan(manifest, tmp_path)
+
+
+@pytest.mark.parametrize("value", [0, -3, 0.0, float("inf"), float("-inf"), float("nan")])
+def test_plan_rejects_nonpositive_shot_duration(manifest, tmp_path, value):
+    with pytest.raises(ValueError, match="shot: duration must be a positive number of seconds"):
+        _shot_duration(manifest, tmp_path, value)
+
+
+def test_non_numeric_shot_duration_falls_back_to_allowance(manifest, tmp_path):
+    plan = _shot_duration(manifest, tmp_path, "5")
+    assert plan.segments[3].duration_s == SHOT_ALLOWANCE_S
 
 
 def probe(path: Path) -> dict:
@@ -200,7 +256,7 @@ def probe(path: Path) -> dict:
 
 
 def test_smoke_render_two_placeholders(tmp_path):
-    require_ffmpeg()
+    require_smoke()
     plan = hostile_plan(tmp_path)
     render(plan)
     assert plan.output.exists()

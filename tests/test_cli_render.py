@@ -1,7 +1,6 @@
 """Tests for the render subcommand."""
 
 import json
-import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -9,6 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from smoke_gate import require_smoke
 from toolbox_tales import cli
 from toolbox_tales.cli import main
 
@@ -76,11 +76,40 @@ def test_render_error_exits_1(episode, capsys, monkeypatch):
     assert "ffmpeg failed: bad" in capsys.readouterr().out
 
 
+def test_drawtext_missing_exits_1(episode, capsys, monkeypatch):
+    monkeypatch.setattr(cli.shutil, "which", lambda name: "/usr/bin/ffmpeg")
+    message = "ffmpeg has no drawtext filter: install an ffmpeg built with freetype (drawtext)"
+
+    def fail(plan, ffmpeg="ffmpeg"):
+        raise cli.render_mod.RenderError(message)
+
+    monkeypatch.setattr(cli.render_mod, "render", fail)
+    assert main(["render", str(episode)]) == 1
+    assert message in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("value", [0, -1, float("inf"), float("nan")])
+def test_bad_shot_duration_exits_1_before_ffmpeg(episode, capsys, no_ffmpeg_calls, value):
+    data = yaml.safe_load(episode.read_text(encoding="utf-8"))
+    data["arrival_shot"]["duration"] = value
+    episode.write_text(yaml.safe_dump(data), encoding="utf-8")
+    assert main(["render", str(episode)]) == 1
+    assert "shot: duration must be a positive number of seconds" in capsys.readouterr().out
+    assert not no_ffmpeg_calls
+
+
+@pytest.mark.parametrize("target", ["../outside.mp4", "../../outside.mp4", "/tmp/outside.mp4"])
+def test_output_path_escaping_manifest_dir_exits_1(episode, capsys, no_ffmpeg_calls, target):
+    data = yaml.safe_load(episode.read_text(encoding="utf-8"))
+    data["render"] = target
+    episode.write_text(yaml.safe_dump(data), encoding="utf-8")
+    assert main(["render", str(episode)]) == 1
+    assert "render: output path escapes the manifest directory" in capsys.readouterr().out
+    assert not no_ffmpeg_calls
+
+
 def test_fixture_manifest_renders(episode, capsys):
-    if shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None:
-        if os.environ.get("CI"):
-            pytest.fail("ffmpeg and ffprobe must be installed under CI")
-        pytest.skip("ffmpeg not installed")
+    require_smoke()
     assert main(["render", str(episode)]) == 0
     out = episode.parent / "media" / "fixture" / "episode.mp4"
     assert str(out) in capsys.readouterr().out
