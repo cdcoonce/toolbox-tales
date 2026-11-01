@@ -48,15 +48,15 @@
       "label": "5 duration not written on success",
       "file": "../../src/toolbox_tales/voice.py",
       "oracle": "real",
-      "find": "    line[\"duration\"] = duration\n",
+      "find": "    line[\"duration\"] = round(float(duration), 3)\n",
       "replace": "    pass\n"
     },
     {
       "label": "6 failed line duration zeroed",
       "file": "../../src/toolbox_tales/voice.py",
       "oracle": "real",
-      "find": "                failures.append(f\"{label}: {type(exc).__name__}: {exc}\")",
-      "replace": "                line[\"duration\"] = 0.0\n                failures.append(f\"{label}: {type(exc).__name__}: {exc}\")"
+      "find": "                failures.append(f\"{label}: {type(cause).__name__}: {cause}\")",
+      "replace": "                line[\"duration\"] = 0.0\n                failures.append(f\"{label}: {type(cause).__name__}: {cause}\")"
     },
     {
       "label": "7 first cast member voice for every line",
@@ -99,6 +99,27 @@
       "oracle": "real",
       "find": "        with os.fdopen(fd, \"w\", encoding=\"utf-8\") as handle:\n            yaml.safe_dump(data, handle, sort_keys=False, allow_unicode=True)\n        os.replace(tmp_name, manifest_path)",
       "replace": "        os.close(fd)\n        with manifest_path.open(\"w\", encoding=\"utf-8\") as handle:\n            yaml.safe_dump(data, handle, sort_keys=False, allow_unicode=True)\n        Path(tmp_name).unlink(missing_ok=True)"
+    },
+    {
+      "label": "fix-1 skip-path measure failure recorded, not re-synthesized",
+      "file": "../../src/toolbox_tales/voice.py",
+      "oracle": "real",
+      "find": "        except _StepFailed:\n            skip = False  # a broken cached file is a cache miss: re-synthesize once",
+      "replace": "        except _StepFailed:\n            raise"
+    },
+    {
+      "label": "fix-2 try widened back over bookkeeping",
+      "file": "../../src/toolbox_tales/voice.py",
+      "oracle": "real",
+      "find": "            except VoiceError as exc:\n                failures.append(f\"{label}: VoiceError: {exc}\")",
+      "replace": "            except Exception as exc:\n                failures.append(f\"{label}: {type(exc).__name__}: {exc}\")"
+    },
+    {
+      "label": "fix-4 unsafe manifest stem check dropped",
+      "file": "../../src/toolbox_tales/voice.py",
+      "oracle": "real",
+      "find": "if manifest_path.stem in (\"\", \".\", \"..\"):",
+      "replace": "if False:"
     },
     {
       "label": "13 [control] no-text error message reworded",
