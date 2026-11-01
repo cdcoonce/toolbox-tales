@@ -134,7 +134,14 @@ def _render(manifest: str) -> int:
         print("\n".join(errors))
         return 1
     path = Path(manifest)
-    plan = render_mod.build_plan(yaml.safe_load(path.read_text(encoding="utf-8")), path.parent)
+    try:
+        plan = render_mod.build_plan(yaml.safe_load(path.read_text(encoding="utf-8")), path.parent)
+    except ValueError as exc:
+        print(exc)
+        return 1
+    if not plan.output.resolve().is_relative_to(path.parent.resolve()):
+        print("render: output path escapes the manifest directory")
+        return 1
     runtime = render_mod.plan_runtime(plan)
     if not RUNTIME_MIN_S <= runtime <= RUNTIME_MAX_S:
         print(f"runtime: {runtime:.2f} s outside {RUNTIME_MIN_S:g}-{RUNTIME_MAX_S:g} s")

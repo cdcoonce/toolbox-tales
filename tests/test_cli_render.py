@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 import yaml
-
 from smoke_gate import require_smoke
+
 from toolbox_tales import cli
 from toolbox_tales.cli import main
 

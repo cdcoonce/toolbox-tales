@@ -6,8 +6,8 @@ prompts and overlays) is untrusted, so it only ever reaches ffmpeg through drawt
 `textfile=` temp files, never inline in a filter string.
 """
 
+import math
 import subprocess
-import sys
 import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -75,10 +75,13 @@ def build_plan(manifest: dict, manifest_dir: Path) -> Plan:
         for panel in manifest["panels"]
     ]
     shot_data = manifest["arrival_shot"]
+    shot_duration = _number(shot_data.get("duration"), SHOT_ALLOWANCE_S)
+    if not math.isfinite(shot_duration) or shot_duration <= 0:
+        raise ValueError("shot: duration must be a positive number of seconds")
     shot = Segment(
         kind="shot",
         source=_existing(manifest_dir, shot_data.get("video")),
-        duration_s=_number(shot_data.get("duration"), SHOT_ALLOWANCE_S),
+        duration_s=shot_duration,
         overlay=None,
         placeholder_text=shot_data.get("prompt"),
     )
@@ -105,9 +108,7 @@ def _write_text(tmp: Path, name: str, text: str) -> Path:
     return path
 
 
-def _segment_command(
-    plan: Plan, index: int, segment: Segment, tmp: Path, ffmpeg: str, text: bool = True
-) -> list:
+def _segment_command(plan: Plan, index: int, segment: Segment, tmp: Path, ffmpeg: str) -> list:
     size = f"{plan.width}x{plan.height}"
     fit = (
         f"scale={plan.width}:{plan.height}:force_original_aspect_ratio=decrease,"
@@ -117,7 +118,7 @@ def _segment_command(
     filters: list[str] = []
     if segment.source is None:
         inputs = ["-f", "lavfi", "-i", f"color=c={_BACKGROUND}:s={size}:r={plan.fps}:d={dur}"]
-        if text and segment.placeholder_text:
+        if segment.placeholder_text:
             path = _write_text(tmp, f"{index}-placeholder.txt", segment.placeholder_text)
             filters.append(_drawtext(path, 22, "24"))
     elif segment.kind == "shot":
@@ -127,7 +128,7 @@ def _segment_command(
     else:
         inputs = ["-loop", "1", "-framerate", str(plan.fps), "-i", str(segment.source)]
         filters.append(fit)
-    if text and segment.overlay:
+    if segment.overlay:
         path = _write_text(tmp, f"{index}-overlay.txt", segment.overlay)
         filters.append(_drawtext(path, 36, "h-th-40"))
     filters.append("format=yuv420p")
@@ -167,26 +168,25 @@ def _run(runner: Runner, args: list) -> None:
         raise RenderError(f"ffmpeg failed: {str(stderr or '').strip()[-_STDERR_TAIL:]}")
 
 
+def _require_drawtext(runner: Runner, ffmpeg: str) -> None:
+    result = runner([ffmpeg, "-hide_banner", "-filters"], capture_output=True, check=False)
+    stdout = result.stdout
+    if isinstance(stdout, bytes):
+        stdout = stdout.decode("utf-8", errors="replace")
+    if result.returncode != 0 or "drawtext" not in str(stdout or ""):
+        raise RenderError(
+            "ffmpeg has no drawtext filter: install an ffmpeg built with freetype (drawtext)"
+        )
+
+
 def render(plan: Plan, ffmpeg: str = "ffmpeg", runner: Runner = subprocess.run) -> None:
     """Write `plan.output` as H.264/yuv420p MP4 with a silent audio track."""
+    _require_drawtext(runner, ffmpeg)
     plan.output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="toolbox-tales-") as name:
         tmp = Path(name)
-        text = True
         for index, segment in enumerate(plan.segments):
-            try:
-                _run(runner, _segment_command(plan, index, segment, tmp, ffmpeg, text))
-            except RenderError as exc:
-                if not text or "drawtext" not in str(exc):
-                    raise
-                # This ffmpeg build lacks drawtext (no freetype). Text is never inlined as a
-                # fallback; the episode renders without on-screen text instead.
-                print(
-                    "warning: ffmpeg has no drawtext filter; rendering without text",
-                    file=sys.stderr,
-                )
-                text = False
-                _run(runner, _segment_command(plan, index, segment, tmp, ffmpeg, text))
+            _run(runner, _segment_command(plan, index, segment, tmp, ffmpeg))
         listing = tmp / "concat.txt"
         listing.write_text(
             "".join(f"file 'seg{i:02d}.mp4'\n" for i in range(len(plan.segments))),

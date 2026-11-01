@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 import yaml
-
 from smoke_gate import require_smoke
+
 from toolbox_tales.manifest import PANEL_PADDING_S, SHOT_ALLOWANCE_S
 from toolbox_tales.render import (
     DEFAULT_LINE_S,
