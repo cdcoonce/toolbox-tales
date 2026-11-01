@@ -32,3 +32,14 @@ Render a placeholder episode (solid-colour panels and shot, overlays burned in, 
 
 It needs ffmpeg and writes the manifest's `render` path. Exit 1 on an invalid manifest, a
 runtime outside 45-60 s, or an ffmpeg failure; exit 3 if ffmpeg is missing.
+
+## Voice
+
+Speak every line in its character's voice with edge-tts (free; the only network call):
+
+    uv run toolbox-tales voice tests/fixtures/episode.yaml [--redo]
+
+It writes `media/voice/<manifest>/pPP-lLL.mp3`, measures each file with ffprobe and writes `audio`
+and `duration` back into the manifest. Unchanged lines (same text and voice) are skipped; `--redo`
+forces all. A failed line is named (`voice: panel 1 line 2: ...`), keeps its old duration, and the
+command exits 1. `render` then mixes the line audio under a panel only if every line has audio.

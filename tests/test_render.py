@@ -305,7 +305,7 @@ def test_plan_panel_with_a_line_lacking_audio_field_is_silent(manifest, tmp_path
 def test_plan_shot_is_always_silent(manifest, tmp_path):
     _voice_files(tmp_path, manifest)
     manifest["arrival_shot"]["audio"] = "media/voice/episode/p01-l01.mp3"
-    shot = [s for s in build_plan(manifest, tmp_path).segments if s.kind == "shot"][0]
+    shot = next(s for s in build_plan(manifest, tmp_path).segments if s.kind == "shot")
     assert shot.audio == ()
 
 

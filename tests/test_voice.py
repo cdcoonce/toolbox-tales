@@ -90,9 +90,7 @@ def test_first_run_voices_every_line_and_writes_back(episode):
     for line in lines:
         assert line["duration"] == tone_seconds(line["text"])
         assert (episode.parent / line["audio"]).exists()
-    assert load(episode)["panels"][0]["lines"][0]["audio"] == (
-        "media/voice/episode/p01-l01.mp3"
-    )
+    assert load(episode)["panels"][0]["lines"][0]["audio"] == ("media/voice/episode/p01-l01.mp3")
     assert [e for e in load_and_validate(episode) if not e.startswith("runtime:")] == []
 
 
@@ -147,9 +145,7 @@ def test_changed_voice_resynthesizes_only_that_characters_lines(episode):
     cast.write_text(yaml.safe_dump(sheet, sort_keys=False), encoding="utf-8")
     synth = FakeSynth()
     run(episode, synth)
-    gauge_lines = [
-        line["text"] for line in all_lines(load(episode)) if line["speaker"] == "Gauge"
-    ]
+    gauge_lines = [line["text"] for line in all_lines(load(episode)) if line["speaker"] == "Gauge"]
     assert sorted(t for t, _ in synth.calls) == sorted(gauge_lines)
     assert {v for _, v in synth.calls} == {"en-GB-RyanNeural"}
 
@@ -165,7 +161,11 @@ def test_redo_resynthesizes_everything(episode):
 def test_each_call_carries_the_speakers_voice(episode):
     synth = FakeSynth()
     run(episode, synth)
-    voices = {"Teeth": "en-US-AndrewNeural", "Gauge": "en-US-AvaNeural", "Foreman": "en-US-BrianNeural"}
+    voices = {
+        "Teeth": "en-US-AndrewNeural",
+        "Gauge": "en-US-AvaNeural",
+        "Foreman": "en-US-BrianNeural",
+    }
     expected = [(line["text"], voices[line["speaker"]]) for line in all_lines(load(episode))]
     assert synth.calls == expected
 

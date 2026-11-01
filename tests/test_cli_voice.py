@@ -34,9 +34,9 @@ def patch_voice(monkeypatch, synth):
 def test_voice_success_prints_summary(episode, monkeypatch, capsys):
     patch_voice(monkeypatch, FakeSynth())
     assert main(["voice", str(episode)]) == 0
-    assert capsys.readouterr().out.strip() == "voiced 10, skipped 0"
+    assert capsys.readouterr().out.strip() == "voiced 8, skipped 0"
     assert main(["voice", str(episode)]) == 0
-    assert capsys.readouterr().out.strip() == "voiced 0, skipped 10"
+    assert capsys.readouterr().out.strip() == "voiced 0, skipped 8"
 
 
 def test_voice_redo_flag(episode, monkeypatch, capsys):
@@ -44,14 +44,14 @@ def test_voice_redo_flag(episode, monkeypatch, capsys):
     main(["voice", str(episode)])
     capsys.readouterr()
     assert main(["voice", str(episode), "--redo"]) == 0
-    assert capsys.readouterr().out.strip() == "voiced 10, skipped 0"
+    assert capsys.readouterr().out.strip() == "voiced 8, skipped 0"
 
 
 def test_voice_failure_exits_1_and_names_the_line(episode, monkeypatch, capsys):
     patch_voice(monkeypatch, FakeSynth(fail_on="Did anyone actually check it?"))
     assert main(["voice", str(episode)]) == 1
     out = capsys.readouterr().out.splitlines()
-    assert out[0] == "voiced 9, skipped 0"
+    assert out[0] == "voiced 7, skipped 0"
     assert out[1].startswith("voice: panel 1 line 2: RuntimeError")
 
 

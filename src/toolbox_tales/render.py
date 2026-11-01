@@ -34,6 +34,7 @@ class Segment:
     duration_s: float
     overlay: str | None
     placeholder_text: str | None
+    audio: tuple[Path, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -59,6 +60,20 @@ def _existing(base: Path, name: Any) -> Path | None:
     return path if path.exists() else None
 
 
+def _panel_audio(panel: dict, base: Path) -> tuple[Path, ...]:
+    """Voice files in line order, or () unless every line has an existing audio file."""
+    lines = panel.get("lines")
+    if not isinstance(lines, list) or not lines:
+        return ()
+    files = []
+    for line in lines:
+        found = _existing(base, line.get("audio") if isinstance(line, dict) else None)
+        if found is None:
+            return ()
+        files.append(found)
+    return tuple(files)
+
+
 def build_plan(manifest: dict, manifest_dir: Path) -> Plan:
     """Turn a validated manifest into an ordered render plan."""
     panels = [
@@ -71,6 +86,7 @@ def build_plan(manifest: dict, manifest_dir: Path) -> Plan:
             + PANEL_PADDING_S,
             overlay=panel.get("overlay"),
             placeholder_text=panel.get("prompt"),
+            audio=_panel_audio(panel, manifest_dir),
         )
         for panel in manifest["panels"]
     ]
@@ -132,18 +148,8 @@ def _segment_command(plan: Plan, index: int, segment: Segment, tmp: Path, ffmpeg
         path = _write_text(tmp, f"{index}-overlay.txt", segment.overlay)
         filters.append(_drawtext(path, 36, "h-th-40"))
     filters.append("format=yuv420p")
-    return [
-        ffmpeg,
-        "-y",
-        "-v",
-        "error",
-        *inputs,
-        "-f",
-        "lavfi",
-        "-i",
-        f"anullsrc=r=44100:cl=stereo:d={dur}",
-        "-vf",
-        ",".join(filters),
+    head = [ffmpeg, "-y", "-v", "error", *inputs]
+    tail = [
         "-t",
         dur,
         "-c:v",
@@ -154,9 +160,25 @@ def _segment_command(plan: Plan, index: int, segment: Segment, tmp: Path, ffmpeg
         "yuv420p",
         "-c:a",
         "aac",
-        "-shortest",
         str(tmp / f"seg{index:02d}.mp4"),
     ]
+    if not segment.audio:
+        silence = ["-f", "lavfi", "-i", f"anullsrc=r=44100:cl=stereo:d={dur}"]
+        return [*head, *silence, "-vf", ",".join(filters), "-shortest", *tail]
+    voice_inputs: list[str] = []
+    for path in segment.audio:
+        voice_inputs += ["-i", str(path)]
+    first = 1  # input 0 is the picture
+    labels = "".join(f"[a{i}]" for i in range(len(segment.audio)))
+    norm = ";".join(
+        f"[{first + i}:a]aformat=sample_rates=44100:channel_layouts=stereo[a{i}]"
+        for i in range(len(segment.audio))
+    )
+    graph = (
+        f"[0:v]{','.join(filters)}[v];{norm};"
+        f"{labels}concat=n={len(segment.audio)}:v=0:a=1,apad=whole_dur={dur}[a]"
+    )
+    return [*head, *voice_inputs, "-filter_complex", graph, "-map", "[v]", "-map", "[a]", *tail]
 
 
 def _run(runner: Runner, args: list) -> None:
@@ -180,7 +202,7 @@ def _require_drawtext(runner: Runner, ffmpeg: str) -> None:
 
 
 def render(plan: Plan, ffmpeg: str = "ffmpeg", runner: Runner = subprocess.run) -> None:
-    """Write `plan.output` as H.264/yuv420p MP4 with a silent audio track."""
+    """Write `plan.output` as H.264/yuv420p MP4 with the line voices mixed under voiced panels (silence elsewhere)."""
     _require_drawtext(runner, ffmpeg)
     plan.output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="toolbox-tales-") as name:
