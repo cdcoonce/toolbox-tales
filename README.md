@@ -23,3 +23,12 @@ Estimate the paid steps of an episode without calling anything paid:
 
 Both exit 2 if `OXEN_API_KEY` is missing, and 1 on an Oxen error. `dry-run` also exits 1 on an
 invalid manifest. A model with no applicable price prints `unpriced` and is never treated as free.
+
+## Render
+
+Render a placeholder episode (solid-colour panels and shot, overlays burned in, silent audio):
+
+    uv run toolbox-tales render tests/fixtures/episode.yaml
+
+It needs ffmpeg and writes the manifest's `render` path. Exit 1 on an invalid manifest, a
+runtime outside 45-60 s, or an ffmpeg failure; exit 3 if ffmpeg is missing.

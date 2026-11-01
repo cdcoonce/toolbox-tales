@@ -9,6 +9,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - run: uv sync
+      - name: ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: lint
         run: uv run ruff check .
       - name: format
