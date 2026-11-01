@@ -129,6 +129,20 @@
       "replace": "return 1"
     },
     {
+      "label": "fix-c config load errors propagate",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "find": "except (TypeError, ValueError, tomllib.TOMLDecodeError, OSError) as exc:",
+      "replace": "except ZeroDivisionError as exc:"
+    },
+    {
+      "label": "fix-d ledger errors propagate",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "find": "except LedgerError as exc:",
+      "replace": "except ZeroDivisionError as exc:"
+    },
+    {
       "label": "15 [control] price subparser help text",
       "file": "../../src/toolbox_tales/cli.py",
       "oracle": "real",
