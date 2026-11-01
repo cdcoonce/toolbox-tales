@@ -1,0 +1,113 @@
+{
+  "runner": "pytest",
+  "test_command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests"
+  ],
+  "collect_command": [
+    "uv",
+    "run",
+    "pytest",
+    "--collect-only",
+    "-q",
+    "tests"
+  ],
+  "mutants": [
+    {
+      "label": "1 never skip: ignore key match",
+      "file": "../../src/toolbox_tales/voice.py",
+      "oracle": "real",
+      "find": "skip = key_path.read_text(encoding=\"utf-8\").strip() == key",
+      "replace": "skip = False"
+    },
+    {
+      "label": "2 key hashes only the voice",
+      "file": "../../src/toolbox_tales/voice.py",
+      "oracle": "real",
+      "find": "(voice + \"\\n\" + text).encode(\"utf-8\")",
+      "replace": "(voice + \"\\n\").encode(\"utf-8\")"
+    },
+    {
+      "label": "3 key hashes only the text",
+      "file": "../../src/toolbox_tales/voice.py",
+      "oracle": "real",
+      "find": "(voice + \"\\n\" + text).encode(\"utf-8\")",
+      "replace": "(text).encode(\"utf-8\")"
+    },
+    {
+      "label": "4 ignore redo",
+      "file": "../../src/toolbox_tales/voice.py",
+      "oracle": "real",
+      "find": "if not redo and audio.exists()",
+      "replace": "if audio.exists()"
+    },
+    {
+      "label": "5 duration not written on success",
+      "file": "../../src/toolbox_tales/voice.py",
+      "oracle": "real",
+      "find": "    line[\"duration\"] = duration\n",
+      "replace": "    pass\n"
+    },
+    {
+      "label": "6 failed line duration zeroed",
+      "file": "../../src/toolbox_tales/voice.py",
+      "oracle": "real",
+      "find": "                failures.append(f\"{label}: {type(exc).__name__}: {exc}\")",
+      "replace": "                line[\"duration\"] = 0.0\n                failures.append(f\"{label}: {type(exc).__name__}: {exc}\")"
+    },
+    {
+      "label": "7 first cast member voice for every line",
+      "file": "../../src/toolbox_tales/voice.py",
+      "oracle": "real",
+      "find": "voice = voices.get(speaker, \"\") if isinstance(speaker, str) else \"\"",
+      "replace": "voice = next(iter(voices.values()), \"\")"
+    },
+    {
+      "label": "8 skip write-back when any failure",
+      "file": "../../src/toolbox_tales/voice.py",
+      "oracle": "real",
+      "find": "    _write_back(manifest_path, data)\n    return",
+      "replace": "    if not failures:\n        _write_back(manifest_path, data)\n    return"
+    },
+    {
+      "label": "9 panel audio when any line has it",
+      "file": "../../src/toolbox_tales/render.py",
+      "oracle": "real",
+      "find": "        found = _existing(base, line.get(\"audio\") if isinstance(line, dict) else None)\n        if found is None:\n            return ()\n        files.append(found)\n    return tuple(files)",
+      "replace": "        found = _existing(base, line.get(\"audio\") if isinstance(line, dict) else None)\n        if found is not None:\n            files.append(found)\n    return tuple(files)"
+    },
+    {
+      "label": "10 render ignores segment audio",
+      "file": "../../src/toolbox_tales/render.py",
+      "oracle": "real",
+      "find": "    if not segment.audio:\n        silence",
+      "replace": "    if True:\n        silence"
+    },
+    {
+      "label": "11 CLI exits 0 on line failures",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "find": "return 1 if result.failures else 0",
+      "replace": "return 0"
+    },
+    {
+      "label": "12 non-atomic write-back (direct write, no replace)",
+      "file": "../../src/toolbox_tales/voice.py",
+      "oracle": "real",
+      "find": "        with os.fdopen(fd, \"w\", encoding=\"utf-8\") as handle:\n            yaml.safe_dump(data, handle, sort_keys=False, allow_unicode=True)\n        os.replace(tmp_name, manifest_path)",
+      "replace": "        os.close(fd)\n        with manifest_path.open(\"w\", encoding=\"utf-8\") as handle:\n            yaml.safe_dump(data, handle, sort_keys=False, allow_unicode=True)\n        Path(tmp_name).unlink(missing_ok=True)"
+    },
+    {
+      "label": "13 [control] no-text error message reworded",
+      "file": "../../src/toolbox_tales/voice.py",
+      "oracle": "real",
+      "expect": "survived",
+      "why": "The wording of the no-text error is only read by the failure string, and no test pins that text; behaviour is identical on every graded path.",
+      "find": "raise VoiceError(\"line has no text\")",
+      "replace": "raise VoiceError(\"line lacks text\")"
+    }
+  ]
+}
