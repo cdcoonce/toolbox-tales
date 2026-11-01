@@ -1,0 +1,17 @@
+style_prompt: "warm illustrated wood shop, soft lamp light, hand-inked outlines"
+characters:
+  - name: Teeth
+    tool: detector-teeth-check
+    personality: "A blade guard who insists on being tested with a scrap board."
+    voice: en-US-AndrewNeural
+    reference_image: ""
+  - name: Gauge
+    tool: tdd
+    personality: "A marking gauge who measures before every cut."
+    voice: en-US-AvaNeural
+    reference_image: ""
+  - name: Foreman
+    tool: build-review-land
+    personality: "A clipboard who never signs off on their own work."
+    voice: en-US-BrianNeural
+    reference_image: ""
