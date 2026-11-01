@@ -1,0 +1,113 @@
+{
+  "runner": "pytest",
+  "test_command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests"
+  ],
+  "collect_command": [
+    "uv",
+    "run",
+    "pytest",
+    "--collect-only",
+    "-q",
+    "tests"
+  ],
+  "mutants": [
+    {
+      "label": "1 panel-count upper bound 6 -> 7",
+      "file": "../../src/toolbox_tales/manifest.py",
+      "oracle": "real",
+      "find": "MAX_PANELS = 6",
+      "replace": "MAX_PANELS = 7"
+    },
+    {
+      "label": "2 panel-count lower bound 4 -> 3",
+      "file": "../../src/toolbox_tales/manifest.py",
+      "oracle": "real",
+      "find": "MIN_PANELS = 4",
+      "replace": "MIN_PANELS = 3"
+    },
+    {
+      "label": "3 unknown speaker not an error",
+      "file": "../../src/toolbox_tales/manifest.py",
+      "oracle": "real",
+      "find": "if not isinstance(speaker, str) or speaker not in names:",
+      "replace": "if not isinstance(speaker, str):"
+    },
+    {
+      "label": "4 arrival_shot.reference membership skipped",
+      "file": "../../src/toolbox_tales/manifest.py",
+      "oracle": "real",
+      "find": "if not isinstance(ref, str) or ref not in names:",
+      "replace": "if not isinstance(ref, str):"
+    },
+    {
+      "label": "5 overlay max inclusive: > becomes >=",
+      "file": "../../src/toolbox_tales/manifest.py",
+      "oracle": "real",
+      "find": "if len(overlay) > OVERLAY_MAX:",
+      "replace": "if len(overlay) >= OVERLAY_MAX:"
+    },
+    {
+      "label": "6 tool-overlay match case-sensitive",
+      "file": "../../src/toolbox_tales/manifest.py",
+      "oracle": "real",
+      "find": "tool.lower() in o.lower()",
+      "replace": "tool in o"
+    },
+    {
+      "label": "7 list of shots accepted via first element",
+      "file": "../../src/toolbox_tales/manifest.py",
+      "oracle": "real",
+      "find": "    if not isinstance(shot, dict):",
+      "replace": "    if isinstance(shot, list) and shot:\n        shot = shot[0]\n    if not isinstance(shot, dict):"
+    },
+    {
+      "label": "8 after_panel upper bound allows len+1",
+      "file": "../../src/toolbox_tales/manifest.py",
+      "oracle": "real",
+      "find": "1 <= after <= panel_count",
+      "replace": "1 <= after <= panel_count + 1"
+    },
+    {
+      "label": "9 runtime lower bound exclusive of 45.0",
+      "file": "../../src/toolbox_tales/manifest.py",
+      "oracle": "real",
+      "find": "RUNTIME_MIN_S <= total",
+      "replace": "RUNTIME_MIN_S < total"
+    },
+    {
+      "label": "10 panel padding 0.5 -> 0.0",
+      "file": "../../src/toolbox_tales/manifest.py",
+      "oracle": "real",
+      "find": "PANEL_PADDING_S = 0.5",
+      "replace": "PANEL_PADDING_S = 0.0"
+    },
+    {
+      "label": "11 missing duration treated as 0.0, runtime checked",
+      "file": "../../src/toolbox_tales/manifest.py",
+      "oracle": "real",
+      "find": "if not isinstance(line, dict) or \"duration\" not in line:\n                return []\n            durations.append(line[\"duration\"])",
+      "replace": "if not isinstance(line, dict):\n                return []\n            durations.append(line.get(\"duration\", 0.0))"
+    },
+    {
+      "label": "12 CLI returns 0 when errors exist",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "find": "print(\"\\n\".join(errors))\n        return 1",
+      "replace": "print(\"\\n\".join(errors))\n        return 0"
+    },
+    {
+      "label": "13 [control] CLI subcommand help text",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "expect": "survived",
+      "why": "Help text is only rendered by --help; no test passes --help and no code path reads it, so behaviour is identical on every path the suite reaches (it would change only the --help output, which is not graded).",
+      "find": "help=\"validate an episode manifest\"",
+      "replace": "help=\"check an episode manifest\""
+    }
+  ]
+}
