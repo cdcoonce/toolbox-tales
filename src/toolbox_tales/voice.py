@@ -109,6 +109,21 @@ def _write_back(manifest_path: Path, data: dict) -> None:
         raise VoiceError(f"cannot write manifest {manifest_path}: {exc}") from exc
 
 
+class _StepFailed(Exception):
+    """Wraps whatever the synth or measure callable raised, so only those are captured."""
+
+    def __init__(self, cause: Exception):
+        super().__init__(str(cause))
+        self.cause = cause
+
+
+def _call(fn: Callable[..., Any], *args: Any) -> Any:
+    try:
+        return fn(*args)
+    except Exception as exc:  # one bad synth or measure must never abort the rest
+        raise _StepFailed(exc) from exc
+
+
 def _voice_line(
     line: dict,
     voices: dict[str, str],
@@ -118,7 +133,10 @@ def _voice_line(
     measure: Measurer,
     redo: bool,
 ) -> bool:
-    """Voice one line; return True if synthesized, False if skipped. Raises on failure."""
+    """Voice one line; return True if synthesized, False if skipped.
+
+    Raises VoiceError for a bad line and _StepFailed when synth or measure fails.
+    """
     text = line.get("text")
     speaker = line.get("speaker")
     if not isinstance(text, str) or not text.strip():
@@ -134,12 +152,18 @@ def _voice_line(
             skip = key_path.read_text(encoding="utf-8").strip() == key
         except (OSError, UnicodeDecodeError):
             skip = False
+    duration = None
+    if skip:
+        try:
+            duration = _call(measure, audio)
+        except _StepFailed:
+            skip = False  # a broken cached file is a cache miss: re-synthesize once
     if not skip:
-        synth(text, voice, audio)
+        _call(synth, text, voice, audio)
         key_path.write_text(key, encoding="utf-8")
-    duration = round(float(measure(audio)), 3)
+        duration = _call(measure, audio)
     line["audio"] = audio.relative_to(base).as_posix()
-    line["duration"] = duration
+    line["duration"] = round(float(duration), 3)
     return not skip
 
 
@@ -151,6 +175,8 @@ def voice_episode(
 ) -> VoiceResult:
     """Voice every line of the manifest and write audio and duration back."""
     manifest_path = Path(manifest_path)
+    if manifest_path.stem in ("", ".", ".."):
+        raise VoiceError("manifest name must not be '.' or '..'")
     errors = [e for e in load_and_validate(manifest_path) if not e.startswith("runtime:")]
     if errors:
         raise VoiceError("invalid manifest: " + "; ".join(errors))
@@ -179,7 +205,10 @@ def voice_episode(
                     voiced += 1
                 else:
                     skipped += 1
-            except Exception as exc:  # noqa: BLE001 - one bad line must never abort the rest
-                failures.append(f"{label}: {type(exc).__name__}: {exc}")
+            except _StepFailed as failed:
+                cause = failed.cause
+                failures.append(f"{label}: {type(cause).__name__}: {cause}")
+            except VoiceError as exc:
+                failures.append(f"{label}: VoiceError: {exc}")
     _write_back(manifest_path, data)
     return VoiceResult(voiced=voiced, skipped=skipped, failures=tuple(failures))
