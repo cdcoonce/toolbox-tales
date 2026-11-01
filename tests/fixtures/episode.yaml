@@ -1,0 +1,39 @@
+cast_sheet: cast.yaml
+gotcha: "Tests passed while the defect they claimed to catch was still in the code."
+tool: detector-teeth-check
+cast: [Teeth, Gauge, Foreman]
+panels:
+  - prompt: "Foreman admires a freshly glued joint at the bench"
+    image: media/fixture/p1.png
+    overlay: "The joint looks perfect"
+    lines:
+      - {speaker: Foreman, text: "Glue's set. Ship it.", duration: 4.0}
+      - {speaker: Gauge, text: "Did anyone actually check it?", duration: 4.5}
+  - prompt: "The joint snaps the moment weight is put on it"
+    image: media/fixture/p2.png
+    overlay: "It never held"
+    lines:
+      - {speaker: Gauge, text: "Every check said it was fine.", duration: 4.5}
+      - {speaker: Foreman, text: "Then the checks were never really looking.", duration: 4.5}
+  - prompt: "A blade guard character rolls in with a scrap board"
+    image: media/fixture/p3.png
+    overlay: "Enter detector-teeth-check"
+    lines:
+      - {speaker: Teeth, text: "Break it on purpose. If the check stays quiet, it has no teeth.", duration: 8.0}
+  - prompt: "Teeth snaps a scrap board and the alarm finally rings"
+    image: media/fixture/p4.png
+    overlay: "A check must bite"
+    lines:
+      - {speaker: Teeth, text: "Hear that? Now the alarm means something.", duration: 4.5}
+      - {speaker: Gauge, text: "So a green light only counts if red was possible.", duration: 4.5}
+  - prompt: "The rebuilt joint holds; the crew nods at the bench"
+    image: media/fixture/p5.png
+    overlay: "Tested checks, trusted joints"
+    lines:
+      - {speaker: Foreman, text: "Next time we break it before we bless it.", duration: 8.0}
+arrival_shot:
+  prompt: "Teeth rolls into the shop and taps a scrap board against its blade"
+  reference: Teeth
+  after_panel: 3
+  video: media/fixture/arrival.mp4
+render: media/fixture/episode.mp4
