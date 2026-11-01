@@ -266,3 +266,57 @@ def test_smoke_render_two_placeholders(tmp_path):
     assert streams["video"]["pix_fmt"] == "yuv420p"
     assert "audio" in streams
     assert float(info["format"]["duration"]) == pytest.approx(2.0, abs=0.2)
+
+
+def _voice_files(tmp_path, manifest, skip=None):
+    """Give every line an audio file (except `skip` = (panel, line) indexes)."""
+    for p, panel in enumerate(manifest["panels"]):
+        for k, line in enumerate(panel["lines"]):
+            name = f"media/voice/episode/p{p + 1:02d}-l{k + 1:02d}.mp3"
+            line["audio"] = name
+            if (p, k) != skip:
+                (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+                (tmp_path / name).write_bytes(b"x")
+
+
+def test_plan_panel_with_all_lines_voiced_gets_audio(manifest, tmp_path):
+    _voice_files(tmp_path, manifest)
+    plan = build_plan(manifest, tmp_path)
+    first = plan.segments[0]
+    assert first.audio == (
+        tmp_path / "media/voice/episode/p01-l01.mp3",
+        tmp_path / "media/voice/episode/p01-l02.mp3",
+    )
+
+
+def test_plan_panel_with_one_missing_audio_file_is_silent(manifest, tmp_path):
+    _voice_files(tmp_path, manifest, skip=(0, 1))
+    plan = build_plan(manifest, tmp_path)
+    assert plan.segments[0].audio == ()
+    assert plan.segments[1].audio != ()
+
+
+def test_plan_panel_with_a_line_lacking_audio_field_is_silent(manifest, tmp_path):
+    _voice_files(tmp_path, manifest)
+    del manifest["panels"][1]["lines"][0]["audio"]
+    assert build_plan(manifest, tmp_path).segments[1].audio == ()
+
+
+def test_plan_shot_is_always_silent(manifest, tmp_path):
+    _voice_files(tmp_path, manifest)
+    manifest["arrival_shot"]["audio"] = "media/voice/episode/p01-l01.mp3"
+    shot = next(s for s in build_plan(manifest, tmp_path).segments if s.kind == "shot")
+    assert shot.audio == ()
+
+
+def test_render_args_for_voiced_panel_include_audio_files(manifest, tmp_path):
+    _voice_files(tmp_path, manifest)
+    plan = build_plan(manifest, tmp_path)
+    calls: list = []
+    render(plan, runner=ok_runner(calls))
+    seg0 = next(c for c in calls if c[-1].endswith("seg00.mp4"))
+    assert str(tmp_path / "media/voice/episode/p01-l01.mp3") in seg0
+    assert str(tmp_path / "media/voice/episode/p01-l02.mp3") in seg0
+    assert not any("anullsrc" in str(a) for a in seg0)
+    shot = next(c for c in calls if c[-1].endswith("seg03.mp4"))
+    assert any("anullsrc" in str(a) for a in shot)

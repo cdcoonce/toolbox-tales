@@ -10,6 +10,7 @@ from pathlib import Path
 import yaml
 
 from toolbox_tales import render as render_mod
+from toolbox_tales import voice as voice_mod
 from toolbox_tales.env import MissingKeyError, require_key
 from toolbox_tales.ledger import Ledger, LedgerError
 from toolbox_tales.manifest import (
@@ -159,6 +160,18 @@ def _render(manifest: str) -> int:
     return 0
 
 
+def _voice(manifest: str, redo: bool) -> int:
+    try:
+        result = voice_mod.voice_episode(Path(manifest), redo=redo)
+    except voice_mod.VoiceError as exc:
+        print(f"voice: {exc}")
+        return 1
+    print(f"voiced {result.voiced}, skipped {result.skipped}")
+    for failure in result.failures:
+        print(f"voice: {failure}")
+    return 1 if result.failures else 0
+
+
 def main(argv: Sequence[str] | None = None, client_factory: ClientFactory | None = None) -> int:
     parser = argparse.ArgumentParser(prog="toolbox-tales")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -170,7 +183,13 @@ def main(argv: Sequence[str] | None = None, client_factory: ClientFactory | None
     dry.add_argument("manifest")
     rend = sub.add_parser("render", help="render a placeholder episode to MP4")
     rend.add_argument("manifest")
+    voi = sub.add_parser("voice", help="synthesize line audio with edge-tts")
+    voi.add_argument("manifest")
+    voi.add_argument("--redo", action="store_true", help="re-synthesize every line")
     args = parser.parse_args(argv)
+
+    if args.command == "voice":
+        return _voice(args.manifest, args.redo)
 
     if args.command == "render":
         return _render(args.manifest)
