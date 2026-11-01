@@ -166,3 +166,32 @@ def test_dry_run_issues_only_get_requests(repo, monkeypatch, capsys):
     assert rc == 0
     assert seen and set(seen) == {"GET"}
     assert not (repo / "ledger" / "spend.csv").read_text().count("\n") > 2
+
+
+def _run(argv, repo, capsys):
+    c = FakeClient({"img": P(cost_per_image=0.02)})
+    rc = main(argv, client_factory=factory(c))
+    cap = capsys.readouterr()
+    assert "Traceback" not in cap.out + cap.err
+    return rc, cap.out
+
+
+@pytest.mark.parametrize("argv", [["price", "img"], ["dry-run", "ep/episode.yaml"]])
+def test_bad_config_exits_1_with_message(repo, capsys, argv):
+    cfg = repo / "config" / "spend.toml"
+    cfg.write_text(cfg.read_text().replace("total_cap_usd = 25.0", "total_cap_usd = -1"))
+    rc, out = _run(argv, repo, capsys)
+    assert rc == 1
+    assert out.startswith("config: ")
+    assert out.count("\n") == 1
+
+
+@pytest.mark.parametrize("argv", [["price", "img"], ["dry-run", "ep/episode.yaml"]])
+def test_bad_ledger_exits_1_with_message(repo, capsys, argv):
+    (repo / "ledger" / "spend.csv").write_text(
+        HEADER + "2026-11-01T00:00:00+00:00,img,image,1,1e309,,x.png\n"
+    )
+    rc, out = _run(argv, repo, capsys)
+    assert rc == 1
+    assert out.startswith("ledger: ")
+    assert out.count("\n") == 1
