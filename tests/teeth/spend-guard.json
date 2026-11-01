@@ -1,0 +1,141 @@
+{
+  "runner": "pytest",
+  "test_command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests"
+  ],
+  "collect_command": [
+    "uv",
+    "run",
+    "pytest",
+    "--collect-only",
+    "-q",
+    "tests"
+  ],
+  "mutants": [
+    {
+      "label": "1 unconfirmed check skipped",
+      "file": "../../src/toolbox_tales/spend.py",
+      "oracle": "real",
+      "find": "if not confirmed:",
+      "replace": "if False:"
+    },
+    {
+      "label": "2 per-call cap compared to total cap",
+      "file": "../../src/toolbox_tales/spend.py",
+      "oracle": "real",
+      "find": "if est.cost_usd > config.per_call_cap_usd:",
+      "replace": "if est.cost_usd > config.total_cap_usd:"
+    },
+    {
+      "label": "3 prior spend dropped from total-cap comparison",
+      "file": "../../src/toolbox_tales/spend.py",
+      "oracle": "real",
+      "find": "if spent_usd + est.cost_usd > config.total_cap_usd:",
+      "replace": "if est.cost_usd > config.total_cap_usd:"
+    },
+    {
+      "label": "4 total cap exact equal refused (> to >=)",
+      "file": "../../src/toolbox_tales/spend.py",
+      "oracle": "real",
+      "find": "if spent_usd + est.cost_usd > config.total_cap_usd:",
+      "replace": "if spent_usd + est.cost_usd >= config.total_cap_usd:"
+    },
+    {
+      "label": "5 missing image price treated as 0.0",
+      "file": "../../src/toolbox_tales/spend.py",
+      "oracle": "real",
+      "find": "None if prices.cost_per_image is None else prices.cost_per_image * quantity",
+      "replace": "(prices.cost_per_image or 0.0) * quantity"
+    },
+    {
+      "label": "5b missing video price treated as 0.0",
+      "file": "../../src/toolbox_tales/spend.py",
+      "oracle": "real",
+      "find": "None if prices.cost_per_second is None else prices.cost_per_second * quantity",
+      "replace": "(prices.cost_per_second or 0.0) * quantity"
+    },
+    {
+      "label": "5c missing text price treated as 0.0",
+      "file": "../../src/toolbox_tales/spend.py",
+      "oracle": "real",
+      "find": "if prices.input_cost_per_token is None or prices.output_cost_per_token is None:",
+      "replace": "if False:"
+    },
+    {
+      "label": "6 unconfirmed checked before unpriced",
+      "file": "../../src/toolbox_tales/spend.py",
+      "oracle": "real",
+      "find": "    if est.cost_usd is None:\n        return Decision(False, \"unpriced\")",
+      "replace": "    if not confirmed:\n        return Decision(False, \"unconfirmed\")\n    if est.cost_usd is None:\n        return Decision(False, \"unpriced\")"
+    },
+    {
+      "label": "7 total always sums estimated_usd",
+      "file": "../../src/toolbox_tales/ledger.py",
+      "oracle": "real",
+      "find": "actual = row[5].strip()",
+      "replace": "actual = \"\""
+    },
+    {
+      "label": "8 header written on every append",
+      "file": "../../src/toolbox_tales/ledger.py",
+      "oracle": "real",
+      "find": "new = not self.path.exists() or self.path.stat().st_size == 0",
+      "replace": "new = True"
+    },
+    {
+      "label": "9 non-numeric cost row skipped as 0.0",
+      "file": "../../src/toolbox_tales/ledger.py",
+      "oracle": "real",
+      "find": "raise LedgerError(f\"ledger line {line}: {name} {text!r} is not a number\") from None",
+      "replace": "return 0.0"
+    },
+    {
+      "label": "10 Token auth scheme instead of Bearer",
+      "file": "../../src/toolbox_tales/oxen.py",
+      "oracle": "double",
+      "find": "f\"Bearer {self.api_key}\"",
+      "replace": "f\"Token {self.api_key}\""
+    },
+    {
+      "label": "11 negative price passes through",
+      "file": "../../src/toolbox_tales/oxen.py",
+      "oracle": "real",
+      "find": "if not math.isfinite(value) or value < 0:",
+      "replace": "if not math.isfinite(value):"
+    },
+    {
+      "label": "12 .env quotes not stripped",
+      "file": "../../src/toolbox_tales/env.py",
+      "oracle": "real",
+      "find": "if len(value) >= 2 and value[0] == value[-1] and value[0] in \"\\\"'\":",
+      "replace": "if False:"
+    },
+    {
+      "label": "13 dry-run counts every panel",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "find": "if not isinstance(image, str) or not (manifest_path.parent / image).exists():",
+      "replace": "if True:"
+    },
+    {
+      "label": "14 missing key exits 1",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "find": "return 2",
+      "replace": "return 1"
+    },
+    {
+      "label": "15 [control] price subparser help text",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "expect": "survived",
+      "why": "Help text is only rendered by --help; no test passes --help and no code reads it, so behaviour is identical on every path the suite reaches (only --help output changes, which is not graded).",
+      "find": "help=\"show model prices and the remaining budget\"",
+      "replace": "help=\"print model prices and the budget left\""
+    }
+  ]
+}
