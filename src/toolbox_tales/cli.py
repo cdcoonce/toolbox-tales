@@ -2,13 +2,14 @@
 
 import argparse
 import sys
+import tomllib
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import yaml
 
 from toolbox_tales.env import MissingKeyError, require_key
-from toolbox_tales.ledger import Ledger
+from toolbox_tales.ledger import Ledger, LedgerError
 from toolbox_tales.manifest import SHOT_ALLOWANCE_S, load_and_validate
 from toolbox_tales.oxen import OxenClient, OxenError, Prices
 from toolbox_tales.spend import Estimate, SpendConfig, estimate, load_config
@@ -27,6 +28,7 @@ def _remaining(config: SpendConfig) -> float:
 
 
 def _price(client: OxenClient, args: argparse.Namespace, config: SpendConfig) -> int:
+    remaining = _remaining(config)
     for model in args.models:
         prices = client.get_prices(model)
         print(model)
@@ -41,7 +43,7 @@ def _price(client: OxenClient, args: argparse.Namespace, config: SpendConfig) ->
             if getattr(prices, name) is not None
         ]
         print("\n".join(lines) if lines else "  unpriced")
-    print(f"remaining: {_money(_remaining(config))} of {_money(config.total_cap_usd)}")
+    print(f"remaining: {_money(remaining)} of {_money(config.total_cap_usd)}")
     return 0
 
 
@@ -78,6 +80,7 @@ def _dry_run(client: OxenClient, args: argparse.Namespace, config: SpendConfig) 
     if errors:
         print("\n".join(errors))
         return 1
+    remaining = _remaining(config)
     path = Path(args.manifest)
     total = 0.0
 
@@ -114,7 +117,7 @@ def _dry_run(client: OxenClient, args: argparse.Namespace, config: SpendConfig) 
     print(line)
     total += cost
 
-    print(f"total: {_money(total)} (remaining {_money(_remaining(config))})")
+    print(f"total: {_money(total)} (remaining {_money(remaining)})")
     return 0
 
 
@@ -136,13 +139,20 @@ def main(argv: Sequence[str] | None = None, client_factory: ClientFactory | None
             print(exc)
             return 2
         client = (client_factory or (lambda k: OxenClient(k)))(key)
-        config = load_config()
+        try:
+            config = load_config()
+        except (TypeError, ValueError, tomllib.TOMLDecodeError, OSError) as exc:
+            print(f"config: {exc}")
+            return 1
         try:
             if args.command == "price":
                 return _price(client, args, config)
             return _dry_run(client, args, config)
         except OxenError as exc:
             print(exc)
+            return 1
+        except LedgerError as exc:
+            print(f"ledger: {exc}")
             return 1
 
     errors = load_and_validate(args.manifest)
