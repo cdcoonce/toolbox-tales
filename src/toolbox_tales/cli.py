@@ -1,6 +1,7 @@
 """Command line entry point."""
 
 import argparse
+import shutil
 import sys
 import tomllib
 from collections.abc import Callable, Sequence
@@ -8,9 +9,15 @@ from pathlib import Path
 
 import yaml
 
+from toolbox_tales import render as render_mod
 from toolbox_tales.env import MissingKeyError, require_key
 from toolbox_tales.ledger import Ledger, LedgerError
-from toolbox_tales.manifest import SHOT_ALLOWANCE_S, load_and_validate
+from toolbox_tales.manifest import (
+    RUNTIME_MAX_S,
+    RUNTIME_MIN_S,
+    SHOT_ALLOWANCE_S,
+    load_and_validate,
+)
 from toolbox_tales.oxen import OxenClient, OxenError, Prices
 from toolbox_tales.spend import Estimate, SpendConfig, estimate, load_config
 
@@ -121,6 +128,30 @@ def _dry_run(client: OxenClient, args: argparse.Namespace, config: SpendConfig) 
     return 0
 
 
+def _render(manifest: str) -> int:
+    errors = load_and_validate(manifest)
+    if errors:
+        print("\n".join(errors))
+        return 1
+    path = Path(manifest)
+    plan = render_mod.build_plan(yaml.safe_load(path.read_text(encoding="utf-8")), path.parent)
+    runtime = render_mod.plan_runtime(plan)
+    if not RUNTIME_MIN_S <= runtime <= RUNTIME_MAX_S:
+        print(f"runtime: {runtime:.2f} s outside {RUNTIME_MIN_S:g}-{RUNTIME_MAX_S:g} s")
+        return 1
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        print("ffmpeg not found: install it (brew install ffmpeg)")
+        return 3
+    try:
+        render_mod.render(plan, ffmpeg)
+    except render_mod.RenderError as exc:
+        print(exc)
+        return 1
+    print(plan.output)
+    return 0
+
+
 def main(argv: Sequence[str] | None = None, client_factory: ClientFactory | None = None) -> int:
     parser = argparse.ArgumentParser(prog="toolbox-tales")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -130,7 +161,12 @@ def main(argv: Sequence[str] | None = None, client_factory: ClientFactory | None
     price.add_argument("models", nargs="+")
     dry = sub.add_parser("dry-run", help="estimate the paid steps of an episode")
     dry.add_argument("manifest")
+    rend = sub.add_parser("render", help="render a placeholder episode to MP4")
+    rend.add_argument("manifest")
     args = parser.parse_args(argv)
+
+    if args.command == "render":
+        return _render(args.manifest)
 
     if args.command in ("price", "dry-run"):
         try:

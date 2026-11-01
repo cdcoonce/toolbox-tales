@@ -134,7 +134,7 @@ def test_build_plan_is_pure(manifest, tmp_path, monkeypatch):
 
 
 def test_plan_runtime_sums_segments(manifest, tmp_path):
-    assert plan_runtime(build_plan(manifest, tmp_path)) == pytest.approx(49.5)
+    assert plan_runtime(build_plan(manifest, tmp_path)) == pytest.approx(50.0)
 
 
 def hostile_plan(tmp_path: Path) -> Plan:

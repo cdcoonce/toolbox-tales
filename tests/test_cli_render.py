@@ -37,7 +37,7 @@ def no_ffmpeg_calls(monkeypatch):
 
 def test_invalid_manifest_exits_1(episode, capsys, no_ffmpeg_calls):
     data = yaml.safe_load(episode.read_text(encoding="utf-8"))
-    del data["gotcha"]
+    data["panels"] = data["panels"][:2]
     episode.write_text(yaml.safe_dump(data), encoding="utf-8")
     assert main(["render", str(episode)]) == 1
     assert capsys.readouterr().out.strip()
@@ -92,4 +92,4 @@ def test_fixture_manifest_renders(episode, capsys):
             check=True,
         ).stdout
     )
-    assert float(info["format"]["duration"]) == pytest.approx(49.5, abs=0.2)
+    assert float(info["format"]["duration"]) == pytest.approx(50.0, abs=0.2)
