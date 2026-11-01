@@ -1,0 +1,106 @@
+{
+  "runner": "pytest",
+  "test_command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests"
+  ],
+  "collect_command": [
+    "uv",
+    "run",
+    "pytest",
+    "--collect-only",
+    "-q",
+    "tests"
+  ],
+  "mutants": [
+    {
+      "label": "1 shot slotted after panel after-1",
+      "file": "../../src/toolbox_tales/render.py",
+      "oracle": "real",
+      "find": "segments = (*panels[:after], shot, *panels[after:])",
+      "replace": "segments = (*panels[: after - 1], shot, *panels[after - 1 :])"
+    },
+    {
+      "label": "2 panel padding dropped",
+      "file": "../../src/toolbox_tales/render.py",
+      "oracle": "real",
+      "find": "            + PANEL_PADDING_S,",
+      "replace": "            + 0.0,"
+    },
+    {
+      "label": "3 missing line duration uses 0.0",
+      "file": "../../src/toolbox_tales/render.py",
+      "oracle": "real",
+      "find": "_number(line.get(\"duration\"), DEFAULT_LINE_S)",
+      "replace": "_number(line.get(\"duration\"), 0.0)"
+    },
+    {
+      "label": "4 measured line durations ignored",
+      "file": "../../src/toolbox_tales/render.py",
+      "oracle": "real",
+      "find": "_number(line.get(\"duration\"), DEFAULT_LINE_S)",
+      "replace": "DEFAULT_LINE_S"
+    },
+    {
+      "label": "5 shot duration override ignored",
+      "file": "../../src/toolbox_tales/render.py",
+      "oracle": "real",
+      "find": "_number(shot_data.get(\"duration\"), SHOT_ALLOWANCE_S)",
+      "replace": "SHOT_ALLOWANCE_S"
+    },
+    {
+      "label": "6 missing image not a placeholder",
+      "file": "../../src/toolbox_tales/render.py",
+      "oracle": "real",
+      "find": "return path if path.exists() else None",
+      "replace": "return path"
+    },
+    {
+      "label": "7 output uses raw render path",
+      "file": "../../src/toolbox_tales/render.py",
+      "oracle": "real",
+      "find": "manifest_dir / manifest[\"render\"]",
+      "replace": "Path(manifest[\"render\"])"
+    },
+    {
+      "label": "8 drawtext text inlined instead of textfile",
+      "file": "../../src/toolbox_tales/render.py",
+      "oracle": "real",
+      "find": "drawtext=textfile='{textfile}':expansion=none",
+      "replace": "drawtext=text='{textfile.read_text()}':expansion=none"
+    },
+    {
+      "label": "9 CLI runtime check removed",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "find": "if not RUNTIME_MIN_S <= runtime <= RUNTIME_MAX_S:",
+      "replace": "if False:"
+    },
+    {
+      "label": "10 missing ffmpeg exits 1",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "find": "install it (brew install ffmpeg)\")\n        return 3",
+      "replace": "install it (brew install ffmpeg)\")\n        return 1"
+    },
+    {
+      "label": "11 silent audio track omitted",
+      "file": "../../src/toolbox_tales/render.py",
+      "oracle": "real",
+      "find": "        \"-f\",\n        \"lavfi\",\n        \"-i\",\n        f\"anullsrc=r=44100:cl=stereo:d={dur}\",\n        \"-vf\",",
+      "replace": "        \"-vf\","
+    },
+    {
+      "label": "12 [control] placeholder colour hex",
+      "file": "../../src/toolbox_tales/render.py",
+      "oracle": "real",
+      "expect": "survived",
+      "why": "Placeholder colour is only checked by eye; no test inspects pixels or the colour string, so every reached path behaves identically.",
+      "find": "_BACKGROUND = \"0x2b3a4a\"",
+      "replace": "_BACKGROUND = \"0x4a3a2b\""
+    }
+  ]
+}
