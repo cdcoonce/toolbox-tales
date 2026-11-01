@@ -350,13 +350,12 @@ def test_programming_error_in_bookkeeping_propagates(episode, monkeypatch):
         run(episode, FakeSynth())
 
 
-@pytest.mark.parametrize("stem", ["..", "."])
-def test_unsafe_manifest_stem_is_rejected(tmp_path, stem):
-    unsafe = tmp_path / f"{stem}.yaml"
-    unsafe.write_text("x: 1\n", encoding="utf-8")
-    assert unsafe.stem == stem
+@pytest.mark.parametrize("name", ["..", ".", "sub/.."])
+def test_unsafe_manifest_stem_is_rejected(name):
+    # Path("..").stem == ".." and Path(".").stem == "" on every Python version.
+    assert Path(name).stem in ("", "..")
     with pytest.raises(VoiceError, match="manifest name must not be"):
-        voice_episode(unsafe, synth=FakeSynth(), measure=fake_measure)
+        voice_episode(Path(name), synth=FakeSynth(), measure=fake_measure)
 
 
 def test_integration_voiced_segment_audio_is_not_silence(episode):
