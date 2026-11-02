@@ -56,7 +56,7 @@ def test_written_prints_path_and_cost_and_exits_0(repo, monkeypatch, capsys):
     out = capsys.readouterr().out.strip()
     assert out == "written ep/episode.yaml (cost $0.1120)"
     assert (repo / "ep" / "episode.yaml").exists()
-    assert main(["validate", "ep/episode.yaml"]) == 1  # runtime is unknown until voice
+    assert main(["validate", "ep/episode.yaml"]) == 0
 
 
 def test_rejected_exits_2_and_writes_nothing(repo, monkeypatch, capsys):
@@ -165,8 +165,12 @@ def test_dry_run_prices_the_script_line(repo, monkeypatch, capsys):
     prices = type(
         "P",
         (),
-        dict(cost_per_image=0.5, cost_per_second=0.1, input_cost_per_token=None,
-             output_cost_per_token=None),
+        {
+            "cost_per_image": 0.5,
+            "cost_per_second": 0.1,
+            "input_cost_per_token": None,
+            "output_cost_per_token": None,
+        },
     )()
     fake = type("C", (), {"get_prices": lambda self, m: prices})()
     assert main(["dry-run", "ep/episode.yaml"], client_factory=lambda k: fake) == 0

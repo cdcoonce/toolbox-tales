@@ -79,16 +79,16 @@ def env(tmp_path):
 
 
 def run(env, config, client, **overrides):
-    kwargs = dict(
-        gotcha_path=env.gotcha,
-        tool=TOOL,
-        cast_path=env.cast,
-        out_path=env.out,
-        confirmed=True,
-        client_factory=lambda: client,
-        ledger=env.ledger,
-        config=config,
-    )
+    kwargs = {
+        "gotcha_path": env.gotcha,
+        "tool": TOOL,
+        "cast_path": env.cast,
+        "out_path": env.out,
+        "confirmed": True,
+        "client_factory": lambda: client,
+        "ledger": env.ledger,
+        "config": config,
+    }
     kwargs.update(overrides)
     return write_script(**kwargs)
 
