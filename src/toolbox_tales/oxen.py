@@ -76,7 +76,7 @@ class OxenClient:
         if not isinstance(parsed, dict):
             raise OxenError(f"HTTP {status}: response for {model_id} is not a JSON object")
         source: dict = parsed
-        for key in ("data", "model"):
+        for key in ("pricing", "data", "model"):
             if isinstance(parsed.get(key), dict):
                 source = parsed[key]
                 break

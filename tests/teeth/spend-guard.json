@@ -150,6 +150,13 @@
       "why": "Help text is only rendered by --help; no test passes --help and no code reads it, so behaviour is identical on every path the suite reaches (only --help output changes, which is not graded).",
       "find": "help=\"show model prices and the remaining budget\"",
       "replace": "help=\"print model prices and the budget left\""
+    },
+    {
+      "label": "pricing: live price fields under `pricing` are read",
+      "file": "../../src/toolbox_tales/oxen.py",
+      "oracle": "real",
+      "find": "for key in (\"pricing\", \"data\", \"model\"):",
+      "replace": "for key in (\"data\", \"model\"):"
     }
   ]
 }

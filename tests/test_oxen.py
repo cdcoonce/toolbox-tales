@@ -86,3 +86,16 @@ def test_non_json_raises():
     c, _ = client(200, b"<html>")
     with pytest.raises(OxenError):
         c.get_prices("m")
+
+
+def test_fields_under_pricing_live_shape():
+    # Shape returned by GET /ai/models/flux-2-dev on 2026-11-01.
+    body = {
+        "id": "flux-2-dev",
+        "fine_tuning": {"cost_per_second": 0.002772},
+        "pricing": {"cost_per_image": 0.014, "method": "per_image"},
+    }
+    c, _ = client(200, body)
+    p = c.get_prices("flux-2-dev")
+    assert p.cost_per_image == 0.014
+    assert p.cost_per_second is None
