@@ -115,6 +115,34 @@
       "why": "The opening sentence is free prose; tests grade only the 105/145 numbers and the delimiter names, so rewording one verb changes no reached behaviour.",
       "find": "You write short illustrated wood-shop comic episodes",
       "replace": "You author short illustrated wood-shop comic episodes"
+    },
+    {
+      "label": "fix-1 fixed delimiter tag, no nonce",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "tag = _draw_nonce(nonce, gotcha, tool_doc)",
+      "replace": "tag = \"fixed\""
+    },
+    {
+      "label": "fix-1b nonce collision redraw skipped",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "if not any(value in t for t in texts if t):",
+      "replace": "if True:"
+    },
+    {
+      "label": "fix-2a missing usage books 0.0 not the estimate",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "        actual = est.cost_usd\n        tokens_in = int",
+      "replace": "        actual = 0.0\n        tokens_in = int"
+    },
+    {
+      "label": "fix-2b extra panel keys copied through into the manifest",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "            {\n                \"prompt\": panel[\"prompt\"],",
+      "replace": "            {\n                **panel,\n                \"prompt\": panel[\"prompt\"],"
     }
   ]
 }
