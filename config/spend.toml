@@ -4,7 +4,7 @@ total_cap_usd = 25.0
 
 [models]
 image = "flux-2-dev"
-video = ""      # set after the live price check (Kling O3 Pro reference-to-video id)
+video = "kling-video-o3-omni"   # live 2026-11-01: $0.1456/s base, 3-15 s, start/tail image
 
 [script]
 model = ""      # Claude model id for slice 7
