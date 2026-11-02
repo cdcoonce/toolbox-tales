@@ -3,7 +3,7 @@ name = "toolbox-tales"
 version = "0.1.0"
 description = "Toolbox Tales episode pipeline"
 requires-python = ">=3.12"
-dependencies = ["pyyaml>=6.0", "edge-tts>=7"]
+dependencies = ["pyyaml>=6.0", "edge-tts>=7", "anthropic>=2.3.0"]
 
 [project.scripts]
 toolbox-tales = "toolbox_tales.cli:main"
