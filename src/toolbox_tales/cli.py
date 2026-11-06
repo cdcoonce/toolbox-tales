@@ -7,9 +7,11 @@ import tomllib
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
+import anthropic
 import yaml
 
 from toolbox_tales import render as render_mod
+from toolbox_tales import script as script_mod
 from toolbox_tales import voice as voice_mod
 from toolbox_tales.env import MissingKeyError, require_key
 from toolbox_tales.ledger import Ledger, LedgerError
@@ -172,6 +174,52 @@ def _voice(manifest: str, redo: bool) -> int:
     return 1 if result.failures else 0
 
 
+def _script(args: argparse.Namespace) -> int:
+    try:
+        config = load_config()
+    except (TypeError, ValueError, tomllib.TOMLDecodeError, OSError) as exc:
+        print(f"config: {exc}")
+        return 1
+    try:
+        result = script_mod.write_script(
+            Path(args.gotcha),
+            args.tool,
+            Path(args.cast),
+            Path(args.out),
+            confirmed=args.yes,
+            tool_doc_path=Path(args.tool_doc) if args.tool_doc else None,
+            ledger=Ledger(),
+            config=config,
+            force=args.force,
+        )
+    except script_mod.ScriptError as exc:
+        print(exc)
+        return 1
+    except LedgerError as exc:
+        print(f"ledger: {exc}")
+        return 1
+    except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
+        print(f"script: API error: {type(exc).__name__}: {exc}")
+        return 1
+    status = result.status
+    if status == "written":
+        print(f"written {result.path} (cost ${result.cost_usd or 0:.4f})")
+        return 0
+    if status == "draft":
+        if result.path is not None:
+            print(f"draft {result.path}")
+        print("\n".join(result.messages))
+        return 1
+    if status == "rejected":
+        print(f"rejected: {result.messages[0]} - {result.messages[1]}")
+        return 2
+    if status == "refused":
+        print("\n".join(result.messages))
+        return 3
+    print(f"spend: {result.messages[0]}")
+    return 4
+
+
 def main(argv: Sequence[str] | None = None, client_factory: ClientFactory | None = None) -> int:
     parser = argparse.ArgumentParser(prog="toolbox-tales")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -186,7 +234,18 @@ def main(argv: Sequence[str] | None = None, client_factory: ClientFactory | None
     voi = sub.add_parser("voice", help="synthesize line audio with edge-tts")
     voi.add_argument("manifest")
     voi.add_argument("--redo", action="store_true", help="re-synthesize every line")
+    scr = sub.add_parser("script", help="write an episode manifest from a gotcha with Claude")
+    scr.add_argument("--gotcha", required=True, help="file holding the gotcha text")
+    scr.add_argument("--tool", required=True, help="tool name; a cast member must play it")
+    scr.add_argument("--cast", required=True, help="cast sheet YAML")
+    scr.add_argument("--out", required=True, help="episode manifest to write")
+    scr.add_argument("--tool-doc", help="optional file describing the tool")
+    scr.add_argument("--yes", action="store_true", help="confirm the paid call")
+    scr.add_argument("--force", action="store_true", help="overwrite an existing manifest")
     args = parser.parse_args(argv)
+
+    if args.command == "script":
+        return _script(args)
 
     if args.command == "voice":
         return _voice(args.manifest, args.redo)

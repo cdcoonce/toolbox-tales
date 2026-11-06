@@ -1,0 +1,148 @@
+{
+  "runner": "pytest",
+  "test_command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests"
+  ],
+  "collect_command": [
+    "uv",
+    "run",
+    "pytest",
+    "--collect-only",
+    "-q",
+    "tests"
+  ],
+  "mutants": [
+    {
+      "label": "1 holds ignored, non-holding script is assembled",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "if not meta[\"holds\"]:",
+      "replace": "if False:"
+    },
+    {
+      "label": "2 validation errors write final file, not .draft",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "    if errors:\n        draft",
+      "replace": "    if False:\n        draft"
+    },
+    {
+      "label": "3 dialogue word count not enforced",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "if not WORDS_MIN <= words <= WORDS_MAX:",
+      "replace": "if False:"
+    },
+    {
+      "label": "4 refusal branch skipped",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "if stop_reason == \"refusal\":",
+      "replace": "if False:"
+    },
+    {
+      "label": "5 max_tokens treated like end_turn",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "if stop_reason == \"max_tokens\":",
+      "replace": "if False:"
+    },
+    {
+      "label": "6 spend refusal ignored, API called anyway (single-site form of call-before-authorize)",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "if not decision.allowed:",
+      "replace": "if False:"
+    },
+    {
+      "label": "7 ledger actual is the estimate",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "actual = tokens_in * rate_in + tokens_out * rate_out",
+      "replace": "actual = est.cost_usd"
+    },
+    {
+      "label": "8 fallbacks=default dropped",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "        fallbacks=\"default\",\n",
+      "replace": ""
+    },
+    {
+      "label": "9 output_config.format dropped",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "            \"format\": {\"type\": \"json_schema\", \"schema\": SCRIPT_SCHEMA},\n",
+      "replace": ""
+    },
+    {
+      "label": "10 hero is first non-matching cast member (single-site form of first cast member)",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "if c.get(\"tool\") == tool), None)",
+      "replace": "if c.get(\"tool\") != tool), None)"
+    },
+    {
+      "label": "11 existing out ignores --force",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "if out_path.exists() and not force:",
+      "replace": "if False:"
+    },
+    {
+      "label": "12 refusal books no ledger row",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "        book(\"refused\")\n        category =",
+      "replace": "        category ="
+    },
+    {
+      "label": "13 rejected exits 1 not 2",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "find": "        return 2\n    if status == \"refused\":",
+      "replace": "        return 1\n    if status == \"refused\":"
+    },
+    {
+      "label": "14 [control] reword first sentence of system prompt",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "expect": "survived",
+      "why": "The opening sentence is free prose; tests grade only the 105/145 numbers and the delimiter names, so rewording one verb changes no reached behaviour.",
+      "find": "You write short illustrated wood-shop comic episodes",
+      "replace": "You author short illustrated wood-shop comic episodes"
+    },
+    {
+      "label": "fix-1 fixed delimiter tag, no nonce",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "tag = _draw_nonce(nonce, gotcha, tool_doc)",
+      "replace": "tag = \"fixed\""
+    },
+    {
+      "label": "fix-1b nonce collision redraw skipped",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "if not any(value in t for t in texts if t):",
+      "replace": "if True:"
+    },
+    {
+      "label": "fix-2a missing usage books 0.0 not the estimate",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "        actual = est.cost_usd\n        tokens_in = int",
+      "replace": "        actual = 0.0\n        tokens_in = int"
+    },
+    {
+      "label": "fix-2b extra panel keys copied through into the manifest",
+      "file": "../../src/toolbox_tales/script.py",
+      "oracle": "real",
+      "find": "            {\n                \"prompt\": panel[\"prompt\"],",
+      "replace": "            {\n                **panel,\n                \"prompt\": panel[\"prompt\"],"
+    }
+  ]
+}

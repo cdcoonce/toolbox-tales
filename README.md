@@ -43,3 +43,16 @@ It writes `media/voice/<manifest>/pPP-lLL.mp3`, measures each file with ffprobe 
 and `duration` back into the manifest. Unchanged lines (same text and voice) are skipped; `--redo`
 forces all. A failed line is named (`voice: panel 1 line 2: ...`), keeps its old duration, and the
 command exits 1. `render` then mixes the line audio under a panel only if every line has audio.
+
+## Script
+
+Write an episode manifest from a gotcha with one Claude call (paid, so it needs `--yes`):
+
+    uv run toolbox-tales script --gotcha gotcha.txt --tool detector-teeth-check \
+        --cast cast.yaml --out episode.yaml [--tool-doc tool.md] [--yes] [--force]
+
+The model first judges whether the gotcha has a physical wood-shop equivalent. The result is then
+validated like any manifest, plus a 105-145 word dialogue check. Exit codes: 0 written, 1 draft
+(written as `<out>.draft` with the errors printed) or error, 2 metaphor rejected, 3 model refused
+or truncated, 4 spend guard refused. Needs `ANTHROPIC_API_KEY`; the cost is booked from actual
+usage in `ledger/spend.csv`.

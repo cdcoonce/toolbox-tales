@@ -1,0 +1,74 @@
+{
+  "metaphor": {
+    "holds": true,
+    "shop_equivalent": "A glued joint that looked sound but was never load-tested.",
+    "reason": "A passing check that cannot fail maps to an untested joint."
+  },
+  "title": "The Joint That Never Held",
+  "panels": [
+    {
+      "prompt": "Foreman admires a freshly glued joint at the bench",
+      "overlay": "The joint looks perfect",
+      "lines": [
+        {
+          "speaker": "Foreman",
+          "text": "Glue has set and the clamps are off. This joint looks perfect, so let us ship it today."
+        },
+        {
+          "speaker": "Gauge",
+          "text": "Did anyone actually load it, or did we only look at it? Looking is not the same as testing."
+        }
+      ]
+    },
+    {
+      "prompt": "The joint snaps the moment weight is put on it",
+      "overlay": "It never held",
+      "lines": [
+        {
+          "speaker": "Gauge",
+          "text": "There it goes. Every check we ran said it was fine, and still it broke."
+        },
+        {
+          "speaker": "Foreman",
+          "text": "Then those checks were never really looking at the joint at all, were they?"
+        }
+      ]
+    },
+    {
+      "prompt": "A blade guard character rolls in with a scrap board",
+      "overlay": "Enter detector-teeth-check",
+      "lines": [
+        {
+          "speaker": "Teeth",
+          "text": "Hello. I am Teeth, and I have one rule. Break the work on purpose, then watch what your check does about it."
+        }
+      ]
+    },
+    {
+      "prompt": "Teeth snaps a scrap board and the alarm finally rings",
+      "overlay": "A check must bite",
+      "lines": [
+        {
+          "speaker": "Teeth",
+          "text": "Hear that? The alarm rang, so now the alarm means something."
+        },
+        {
+          "speaker": "Gauge",
+          "text": "So a green light only counts if a red light was possible."
+        }
+      ]
+    },
+    {
+      "prompt": "The rebuilt joint holds; the crew nods at the bench",
+      "overlay": "Tested checks, trusted joints",
+      "lines": [
+        {
+          "speaker": "Foreman",
+          "text": "Next time we break it before we bless it, and only then do we sign off the joint."
+        }
+      ]
+    }
+  ],
+  "arrival_after_panel": 3,
+  "arrival_prompt": "Teeth rolls into the shop and taps a scrap board against its blade"
+}

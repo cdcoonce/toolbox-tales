@@ -1,0 +1,11 @@
+{
+  "metaphor": {
+    "holds": false,
+    "shop_equivalent": "A glued joint that looked sound but was never load-tested.",
+    "reason": "A passing check that cannot fail maps to an untested joint."
+  },
+  "title": "The Joint That Never Held",
+  "panels": [],
+  "arrival_after_panel": 3,
+  "arrival_prompt": "Teeth rolls into the shop and taps a scrap board against its blade"
+}

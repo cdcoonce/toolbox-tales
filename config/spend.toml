@@ -7,8 +7,8 @@ image = "flux-2-dev"
 video = "kling-video-o3-omni"   # live 2026-11-01: $0.1456/s base, 3-15 s, start/tail image
 
 [script]
-model = ""      # Claude model id for slice 7
-input_usd_per_mtok = 0.0   # 0.0 means unpriced
-output_usd_per_mtok = 0.0
+model = "claude-opus-5-5"   # Claude model id for the script writer
+input_usd_per_mtok = 4.0   # 0.0 means unpriced
+output_usd_per_mtok = 20.0
 est_input_tokens = 4000
-est_output_tokens = 1500
+est_output_tokens = 8000   # covers thinking tokens, which bill as output
