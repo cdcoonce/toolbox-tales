@@ -35,6 +35,13 @@ runtime outside 45-60 s, or an ffmpeg failure; exit 3 if ffmpeg is missing.
 
 ## Voice
 
+Generate missing panel images (paid; refused without `--yes`):
+
+    uv run toolbox-tales panels tests/fixtures/episode.yaml --yes [--panel N]
+
+`--panel N` regenerates only panel N, overwriting it. Cast references or descriptions come from
+`[panels]` in `config/spend.toml`.
+
 Speak every line in its character's voice with edge-tts (free; the only network call):
 
     uv run toolbox-tales voice tests/fixtures/episode.yaml [--redo]
