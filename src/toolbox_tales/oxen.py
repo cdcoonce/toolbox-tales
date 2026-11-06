@@ -1,5 +1,7 @@
-"""Oxen hub client. Prices only in this slice; no paid endpoint is called here."""
+"""Oxen hub client: model prices and image generation."""
 
+import base64
+import binascii
 import json
 import math
 import urllib.error
@@ -20,6 +22,10 @@ _PRICE_FIELDS = (
 
 class OxenError(Exception):
     """Raised on a non-2xx status or an unreadable response."""
+
+
+class ImageResponseError(OxenError):
+    """A 2xx image response that holds no readable image: billed, but unusable."""
 
 
 @dataclass(frozen=True)
@@ -81,3 +87,51 @@ class OxenClient:
                 source = parsed[key]
                 break
         return Prices(**{name: _price(source.get(name)) for name in _PRICE_FIELDS}, raw=parsed)
+
+    def generate_image(
+        self,
+        model: str,
+        prompt: str,
+        input_images: list[str] | None = None,
+        aspect_ratio: str = "16:9",
+    ) -> bytes:
+        """Generate one image and return its decoded bytes.
+
+        A non-2xx status raises OxenError (not billed). A 2xx response that holds no readable
+        image raises ImageResponseError (billed). The caller checks the image magic.
+        """
+        payload: dict[str, Any] = {
+            "model": model,
+            "prompt": prompt,
+            "response_format": "b64_json",
+            "aspect_ratio": aspect_ratio,
+        }
+        if input_images:
+            payload["input_image"] = input_images
+        request = urllib.request.Request(
+            f"{self.base_url}/ai/images/generate",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        status, body = self.transport(request)
+        if not 200 <= status < 300:
+            raise OxenError(f"HTTP {status} generating image with {model}")
+        try:
+            parsed = json.loads(body)
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise ImageResponseError(f"HTTP {status}: image response is not JSON") from exc
+        images = parsed.get("images") if isinstance(parsed, dict) else None
+        if not isinstance(images, list) or not images:
+            raise ImageResponseError(f"HTTP {status}: image response has no images")
+        first = images[0]
+        encoded = first.get("b64_json") if isinstance(first, dict) else None
+        if not isinstance(encoded, str) or not encoded:
+            raise ImageResponseError(f"HTTP {status}: image response has no b64_json")
+        try:
+            return base64.b64decode(encoded, validate=True)
+        except (binascii.Error, ValueError) as exc:
+            raise ImageResponseError(f"HTTP {status}: image b64_json is not valid base64") from exc
