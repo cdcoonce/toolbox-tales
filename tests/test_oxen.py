@@ -103,9 +103,9 @@ def test_fields_under_pricing_live_shape():
 
 # --- generate_image ---
 
-import base64  # noqa: E402
+import base64
 
-from toolbox_tales.oxen import ImageResponseError  # noqa: E402
+from toolbox_tales.oxen import ImageResponseError
 
 
 def _img_body(data=b"abc"):
