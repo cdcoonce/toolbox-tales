@@ -99,3 +99,72 @@ def test_fields_under_pricing_live_shape():
     p = c.get_prices("flux-2-dev")
     assert p.cost_per_image == 0.014
     assert p.cost_per_second is None
+
+
+# --- generate_image ---
+
+import base64  # noqa: E402
+
+from toolbox_tales.oxen import ImageResponseError  # noqa: E402
+
+
+def _img_body(data=b"abc"):
+    return {"model": "m", "created": 1, "images": [{"b64_json": base64.b64encode(data).decode()}]}
+
+
+def test_generate_image_request_and_result():
+    c, t = client(200, _img_body(b"PIX"))
+    out = c.generate_image("flux", "a prompt", ["data:image/png;base64,AA=="], "16:9")
+    assert out == b"PIX"
+    req = t.requests[0]
+    assert req.get_method() == "POST"
+    assert req.full_url == "https://hub.oxen.ai/api/ai/images/generate"
+    assert req.get_header("Authorization") == "Bearer k123"
+    assert req.get_header("Content-type") == "application/json"
+    body = json.loads(req.data)
+    assert body == {
+        "model": "flux",
+        "prompt": "a prompt",
+        "response_format": "b64_json",
+        "aspect_ratio": "16:9",
+        "input_image": ["data:image/png;base64,AA=="],
+    }
+
+
+@pytest.mark.parametrize("images", [None, []])
+def test_generate_image_omits_empty_input_image(images):
+    c, t = client(200, _img_body())
+    c.generate_image("flux", "p", images)
+    assert "input_image" not in json.loads(t.requests[0].data)
+
+
+def test_generate_image_non_2xx_is_plain_oxen_error():
+    c, _ = client(500, b"boom")
+    with pytest.raises(OxenError, match="HTTP 500 generating image with flux") as info:
+        c.generate_image("flux", "p")
+    assert not isinstance(info.value, ImageResponseError)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"not json",
+        {"model": "m"},
+        {"images": []},
+        {"images": "x"},
+        {"images": [{}]},
+        {"images": [{"b64_json": 5}]},
+        {"images": [{"b64_json": ""}]},
+        {"images": [{"b64_json": "!!!notbase64"}]},
+        {"images": ["x"]},
+        [1],
+    ],
+)
+def test_generate_image_unreadable_2xx_is_image_response_error(body):
+    c, _ = client(200, body)
+    with pytest.raises(ImageResponseError):
+        c.generate_image("flux", "p")
+
+
+def test_image_response_error_is_oxen_error():
+    assert issubclass(ImageResponseError, OxenError)
