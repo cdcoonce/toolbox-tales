@@ -152,7 +152,7 @@ def test_total_cap_midrun(tmp_path):
     ledger = Ledger(tmp_path / "ledger.csv")
     ledger.path.write_text(
         "timestamp,model,kind,quantity,estimated_usd,actual_usd,output\n"
-        "2026-11-01T00:00:00+00:00,flux-2-dev,image,1,24.0,,x.png\n"
+        "2026-11-01T00:00:00+00:00,flux-2-dev,image,1,24.2,,x.png\n"
     )
     fake = Fake()
     result, _ = run_made(tmp_path, fake, manifest, cfg)
@@ -192,7 +192,7 @@ def test_references_used(tmp_path):
     assert body["input_image"][0] == "data:image/png;base64," + base64.b64encode(PNG).decode()
     assert "Teeth is @Image1." in body["prompt"]
     assert "Teeth:" not in body["prompt"]
-    assert "blade guard" not in body["prompt"]
+    assert "insists on being tested" not in body["prompt"]
     # panel 1 has no Teeth: no reference
     assert "input_image" not in fake.generates[0][3]
 
