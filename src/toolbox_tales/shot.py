@@ -144,7 +144,9 @@ def make_shot(
     ledger = ledger or Ledger()
 
     pending = shot.get("generation_id")
-    if isinstance(pending, str) and pending:
+    if "generation_id" in shot and (not isinstance(pending, str) or not pending):
+        raise ShotError("shot: generation_id must be a non-empty string; remove it to resubmit")
+    if isinstance(pending, str):
         model = shot.get("model")
         return _poll(
             manifest_path,
