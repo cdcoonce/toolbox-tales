@@ -12,3 +12,7 @@ input_usd_per_mtok = 4.0   # 0.0 means unpriced
 output_usd_per_mtok = 20.0
 est_input_tokens = 4000
 est_output_tokens = 8000   # covers thinking tokens, which bill as output
+
+[panels]
+references = true   # flux-2-dev request_schema lists input_image (checked 2026-11-01)
+aspect_ratio = "16:9"

@@ -1,0 +1,134 @@
+{
+  "runner": "pytest",
+  "test_command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests"
+  ],
+  "collect_command": [
+    "uv",
+    "run",
+    "pytest",
+    "--collect-only",
+    "-q",
+    "tests"
+  ],
+  "mutants": [
+    {
+      "label": "1 target every panel regardless of image",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "target_numbers = [n for n, img in resolved if not img.exists()]",
+      "replace": "target_numbers = [n for n, img in resolved]"
+    },
+    {
+      "label": "2 --panel skips when image exists",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "target_numbers = [panel]\n        skipped = 0",
+      "replace": "target_numbers = [panel] if not resolved[panel - 1][1].exists() else []\n        skipped = 0"
+    },
+    {
+      "label": "3 accept panel 0",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "if not 1 <= panel <= len(panels):",
+      "replace": "if not 0 <= panel <= len(panels):"
+    },
+    {
+      "label": "4 refusal non-blocking before the call",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "            refused = decision.reason\n            break",
+      "replace": "            refused = decision.reason"
+    },
+    {
+      "label": "5 total read once before loop",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "    for req in requests:\n        decision = authorize(est, confirmed, ledger.total_spent(), config)",
+      "replace": "    _spent = ledger.total_spent()\n    for req in requests:\n        decision = authorize(est, confirmed, _spent, config)"
+    },
+    {
+      "label": "6 skip ledger append on ImageResponseError",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "        except ImageResponseError as exc:\n            ledger.append(est, output=req.image_rel, actual_usd=est.cost_usd)\n",
+      "replace": "        except ImageResponseError as exc:\n"
+    },
+    {
+      "label": "7 ledger row on non-2xx",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "        except OxenError as exc:\n            failures.append",
+      "replace": "        except OxenError as exc:\n            ledger.append(est, output=req.image_rel, actual_usd=est.cost_usd)\n            failures.append"
+    },
+    {
+      "label": "8 skip magic check",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "if not _is_image(data):",
+      "replace": "if False:"
+    },
+    {
+      "label": "9 ignore references flag",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "if refs and isinstance(ref, str) and ref:",
+      "replace": "if False:"
+    },
+    {
+      "label": "10 describe every speaker even when referenced",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "        else:\n            personality = char.get(\"personality\")",
+      "replace": "        if True:\n            personality = char.get(\"personality\")"
+    },
+    {
+      "label": "11 requests built after get_prices",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "    requests = [\n        _build_request(n, panels[n - 1], base, cast, cast_dir, style, references)\n        for n in target_numbers\n    ]\n\n    model = config.image_model\n    prices = client.get_prices(model)\n",
+      "replace": "    model = config.image_model\n    prices = client.get_prices(model)\n    requests = [\n        _build_request(n, panels[n - 1], base, cast, cast_dir, style, references)\n        for n in target_numbers\n    ]\n"
+    },
+    {
+      "label": "12 drop containment check",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "image.relative_to(base_resolved)",
+      "replace": "image.relative_to(image)"
+    },
+    {
+      "label": "13 always send input_image",
+      "file": "../../src/toolbox_tales/oxen.py",
+      "oracle": "real",
+      "find": "if input_images:\n            payload[\"input_image\"] = input_images",
+      "replace": "if True:\n            payload[\"input_image\"] = input_images"
+    },
+    {
+      "label": "14 write manifest back with safe_dump",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "    base = manifest_path.parent\n",
+      "replace": "    base = manifest_path.parent\n    manifest_path.write_text(yaml.safe_dump(manifest), encoding=\"utf-8\")\n"
+    },
+    {
+      "label": "15 refusal exits 1",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "find": "print(f\"spend: {result.refused}\")\n        return 4",
+      "replace": "print(f\"spend: {result.refused}\")\n        return 1"
+    },
+    {
+      "label": "16 [control] atomic temp prefix renamed",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "expect": "survived",
+      "why": "The temp file name is replaced away by os.replace and never observed by any test; behaviour is identical.",
+      "find": "prefix=f\".{path.name}.\"",
+      "replace": "prefix=f\".{path.name}.x\""
+    }
+  ]
+}

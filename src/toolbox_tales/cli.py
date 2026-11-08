@@ -10,6 +10,7 @@ from pathlib import Path
 import anthropic
 import yaml
 
+from toolbox_tales import panels as panels_mod
 from toolbox_tales import render as render_mod
 from toolbox_tales import script as script_mod
 from toolbox_tales import voice as voice_mod
@@ -220,6 +221,49 @@ def _script(args: argparse.Namespace) -> int:
     return 4
 
 
+def _panels(args: argparse.Namespace, client_factory: ClientFactory | None) -> int:
+    try:
+        key = require_key("OXEN_API_KEY")
+    except MissingKeyError as exc:
+        print(exc)
+        return 2
+    client = (client_factory or (lambda k: OxenClient(k)))(key)
+    try:
+        config = load_config()
+    except (TypeError, ValueError, tomllib.TOMLDecodeError, OSError) as exc:
+        print(f"config: {exc}")
+        return 1
+    try:
+        result = panels_mod.generate_panels(
+            Path(args.manifest),
+            client,
+            confirmed=args.yes,
+            panel=args.panel,
+            ledger=Ledger(),
+            config=config,
+        )
+    except panels_mod.PanelsError as exc:
+        print(exc)
+        return 1
+    except OxenError as exc:
+        print(exc)
+        return 1
+    except LedgerError as exc:
+        print(f"ledger: {exc}")
+        return 1
+    base = Path(args.manifest).parent
+    manifest = yaml.safe_load(Path(args.manifest).read_text(encoding="utf-8"))
+    for n in result.generated:
+        print(f"generated panel {n} -> {base / manifest['panels'][n - 1]['image']}")
+    print(f"generated {len(result.generated)}, skipped {result.skipped}")
+    for failure in result.failures:
+        print(f"panels: {failure}")
+    if result.refused is not None:
+        print(f"spend: {result.refused}")
+        return 4
+    return 1 if result.failures else 0
+
+
 def main(argv: Sequence[str] | None = None, client_factory: ClientFactory | None = None) -> int:
     parser = argparse.ArgumentParser(prog="toolbox-tales")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -242,7 +286,14 @@ def main(argv: Sequence[str] | None = None, client_factory: ClientFactory | None
     scr.add_argument("--tool-doc", help="optional file describing the tool")
     scr.add_argument("--yes", action="store_true", help="confirm the paid call")
     scr.add_argument("--force", action="store_true", help="overwrite an existing manifest")
+    pan = sub.add_parser("panels", help="generate missing panel images with Oxen")
+    pan.add_argument("manifest")
+    pan.add_argument("--panel", type=int, help="regenerate only this 1-based panel")
+    pan.add_argument("--yes", action="store_true", help="confirm the paid calls")
     args = parser.parse_args(argv)
+
+    if args.command == "panels":
+        return _panels(args, client_factory)
 
     if args.command == "script":
         return _script(args)
