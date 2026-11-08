@@ -1,0 +1,127 @@
+{
+  "runner": "pytest",
+  "test_command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests"
+  ],
+  "collect_command": [
+    "uv",
+    "run",
+    "pytest",
+    "--collect-only",
+    "-q",
+    "tests"
+  ],
+  "mutants": [
+    {
+      "label": "1 numbering starts at 1",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "first = _highest(directory) + 1",
+      "replace": "first = 1"
+    },
+    {
+      "label": "2 generate before authorize",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "        decision = authorize(est, confirmed, ledger.total_spent(), config)\n        if not decision.allowed:\n            refused = decision.reason\n            break\n        path = directory / f\"c{number:02d}.png\"\n        rel = path.relative_to(cast_path.parent).as_posix()\n",
+      "replace": "        path = directory / f\"c{number:02d}.png\"\n        rel = path.relative_to(cast_path.parent).as_posix()\n        client.generate_image(model, prompt, None, \"1:1\")\n        decision = authorize(est, confirmed, ledger.total_spent(), config)\n        if not decision.allowed:\n            refused = decision.reason\n            break\n"
+    },
+    {
+      "label": "3 total read once before loop",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "    for number in range(first, first + n):\n        decision = authorize(est, confirmed, ledger.total_spent(), config)",
+      "replace": "    _spent = ledger.total_spent()\n    for number in range(first, first + n):\n        decision = authorize(est, confirmed, _spent, config)"
+    },
+    {
+      "label": "4 no ledger row on non-image bytes",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "        ledger.append(est, output=rel, actual_usd=est.cost_usd)\n        if not _is_image(data):\n            failures.append(f\"candidate {number:02d}: response is not an image\")\n            continue\n",
+      "replace": "        if not _is_image(data):\n            failures.append(f\"candidate {number:02d}: response is not an image\")\n            continue\n        ledger.append(est, output=rel, actual_usd=est.cost_usd)\n"
+    },
+    {
+      "label": "5 ledger row before the call",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "        try:\n            data = client.generate_image(model, prompt, None, \"1:1\")",
+      "replace": "        ledger.append(est, output=rel, actual_usd=est.cost_usd)\n        try:\n            data = client.generate_image(model, prompt, None, \"1:1\")"
+    },
+    {
+      "label": "6 drop name check",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "if not isinstance(name, str) or not _NAME.match(name):",
+      "replace": "if False:"
+    },
+    {
+      "label": "7 allow n=9",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "MIN_N, MAX_N = 1, 8",
+      "replace": "MIN_N, MAX_N = 1, 9"
+    },
+    {
+      "label": "8 drop style prompt",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "f\"{style}. Character design sheet for {name}. {personality} \"",
+      "replace": "f\"Character design sheet for {name}. {personality} \""
+    },
+    {
+      "label": "9 aspect 16:9",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "client.generate_image(model, prompt, None, \"1:1\")\n        except ImageResponseError",
+      "replace": "client.generate_image(model, prompt, None, \"16:9\")\n        except ImageResponseError"
+    },
+    {
+      "label": "10 allow slash in file name",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "        \"/\" in candidate\n        or \"\\\\\" in candidate",
+      "replace": "        False\n        or \"\\\\\" in candidate"
+    },
+    {
+      "label": "11 approve also drops voice",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "    character[\"reference_image\"] = rel\n",
+      "replace": "    character[\"reference_image\"] = rel\n    character.pop(\"voice\", None)\n"
+    },
+    {
+      "label": "12 approve skips image check",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "    if not _is_image(data):\n        raise CastError(",
+      "replace": "    if False:\n        raise CastError("
+    },
+    {
+      "label": "13 generate writes sheet back",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "    return CandidatesResult(tuple(written), tuple(failures), refused)",
+      "replace": "    cast_path.write_text(yaml.safe_dump(sheet, sort_keys=False, allow_unicode=True), encoding=\"utf-8\")\n    return CandidatesResult(tuple(written), tuple(failures), refused)"
+    },
+    {
+      "label": "14 approve requires API key",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "find": "def _cast_approve(args: argparse.Namespace) -> int:\n    try:\n        ref =",
+      "replace": "def _cast_approve(args: argparse.Namespace) -> int:\n    try:\n        require_key(\"OXEN_API_KEY\")\n    except MissingKeyError as exc:\n        print(exc)\n        return 2\n    try:\n        ref ="
+    },
+    {
+      "label": "15 [control] sheet temp-file suffix",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "suffix=\".tmp\")",
+      "replace": "suffix=\".tmpx\")",
+      "expect": "survived",
+      "why": "The temp file is replaced away by os.replace and never observed by any test; behaviour is identical."
+    }
+  ]
+}
