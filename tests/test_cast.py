@@ -201,3 +201,91 @@ def test_approve_twice_overwrites(tmp_path):
     approve(cast, "Teeth", "1")
     ref = approve(cast, "Teeth", "2")
     assert ref.read_bytes() == PNG2
+
+
+def edit_sheet(cast, fn):
+    sheet = yaml.safe_load(cast.read_text())
+    fn(sheet)
+    cast.write_text(yaml.safe_dump(sheet, sort_keys=False))
+
+
+def test_unsafe_name_in_sheet_refused_by_generate(tmp_path):
+    # The sheet lookup would find this name, so only the name pattern can refuse it.
+    cast, _ = make(tmp_path)
+    edit_sheet(cast, lambda s: s["characters"][0].update(name="Bad Name!"))
+    fake = Fake()
+    with pytest.raises(CastError):
+        gen(tmp_path, fake, name="Bad Name!", n=1)
+    assert fake.calls == []
+    assert not (cast.parent / "media").exists()
+
+
+def test_unsafe_name_in_sheet_refused_by_approve(tmp_path):
+    cast, _ = make(tmp_path)
+    edit_sheet(cast, lambda s: s["characters"][0].update(name="Bad Name!"))
+    d = cast.parent / "media/cast/Bad Name!"
+    d.mkdir(parents=True)
+    (d / "c01.png").write_bytes(PNG)
+    before = cast.read_bytes()
+    with pytest.raises(CastError):
+        approve(cast, "Bad Name!", "1")
+    assert cast.read_bytes() == before
+    assert not (cast.parent / "refs").exists()
+
+
+@pytest.mark.parametrize("dup", ["Teeth", "Gauge"])
+def test_duplicate_names_refused_by_generate(tmp_path, dup):
+    cast, _ = make(tmp_path)
+    edit_sheet(cast, lambda s: s["characters"][2].update(name=dup))
+    fake = Fake()
+    with pytest.raises(CastError, match="duplicate"):
+        gen(tmp_path, fake, name="Teeth", n=1)
+    assert fake.calls == []
+    assert not (cast.parent / "media").exists()
+
+
+@pytest.mark.parametrize("dup", ["Teeth", "Gauge"])
+def test_duplicate_names_refused_by_approve(tmp_path, dup):
+    cast, _ = seeded(tmp_path)
+    edit_sheet(cast, lambda s: s["characters"][2].update(name=dup))
+    before = cast.read_bytes()
+    with pytest.raises(CastError, match="duplicate"):
+        approve(cast, "Teeth", "1")
+    assert cast.read_bytes() == before
+    assert not (cast.parent / "refs").exists()
+
+
+@pytest.mark.parametrize(
+    ("index", "field"), [(0, "personality"), (1, "voice"), (2, "tool"), (1, "reference_image")]
+)
+def test_approve_validates_whole_sheet_before_writing(tmp_path, index, field):
+    cast, _ = seeded(tmp_path)
+    edit_sheet(cast, lambda s: s["characters"][index].update({field: 7}))
+    before = cast.read_bytes()
+    with pytest.raises(CastError):
+        approve(cast, "Teeth", "1")
+    assert cast.read_bytes() == before
+    assert not (cast.parent / "refs").exists()
+
+
+@pytest.mark.parametrize("candidate", ["c07.png", "7"])
+def test_approve_refuses_symlinked_candidate(tmp_path, candidate):
+    cast, d = seeded(tmp_path)
+    outside = tmp_path / "outside.png"
+    outside.write_bytes(PNG2)
+    (d / "c07.png").symlink_to(outside)
+    before = cast.read_bytes()
+    with pytest.raises(CastError):
+        approve(cast, "Teeth", candidate)
+    assert cast.read_bytes() == before
+    assert not (cast.parent / "refs").exists()
+
+
+def test_approve_png_removes_stale_ref_of_other_suffix(tmp_path):
+    cast, _ = seeded(tmp_path)
+    refs = cast.parent / "refs"
+    refs.mkdir()
+    (refs / "Teeth.jpg").write_bytes(b"\xff\xd8\xff" + b"\x00" * 8)
+    (refs / "Gauge.jpg").write_bytes(b"\xff\xd8\xff" + b"\x00" * 8)
+    approve(cast, "Teeth", "1")
+    assert sorted(p.name for p in refs.iterdir()) == ["Gauge.jpg", "Teeth.png"]
