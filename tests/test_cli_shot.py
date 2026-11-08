@@ -125,6 +125,19 @@ def test_missing_start_frame_exit_1(repo, capsys):
     assert fake.total == 0
 
 
+def test_corrupt_generation_id_exit_1(repo, capsys):
+    import yaml
+
+    path = repo / "ep/episode.yaml"
+    data = yaml.safe_load(path.read_text())
+    data["arrival_shot"]["generation_id"] = 7
+    path.write_text(yaml.safe_dump(data, sort_keys=False))
+    fake = Fake()
+    assert run(fake, "--yes") == 1
+    assert "generation_id must be a non-empty string" in capsys.readouterr().out
+    assert fake.total == 0
+
+
 def test_missing_key_exit_2(repo, monkeypatch):
     monkeypatch.setattr(
         cli, "require_key", lambda name: (_ for _ in ()).throw(cli.MissingKeyError("no key"))

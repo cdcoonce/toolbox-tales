@@ -73,7 +73,7 @@ class Fake:
             return self.enqueue.pop(0)
         if "/ai/queue/" in url:
             item = self.gets.pop(0)
-            if isinstance(item, Exception):
+            if isinstance(item, BaseException):
                 raise item
             return item
         if url == DOWNLOAD_URL:
@@ -411,6 +411,48 @@ def test_interrupted_poll_leaves_id_in_manifest(tmp_path):
     assert "network down" in result.message
     assert shot_of(tmp_path / "episode.yaml")["generation_id"] == "gen-1"
     assert len(rows(ledger)) == 1
+
+
+class _Interrupt(BaseException):
+    """Not caught by `_poll` (it only handles OxenError), like a Ctrl-C mid-poll."""
+
+
+def test_id_and_model_in_manifest_before_polling_starts(tmp_path):
+    fake = Fake(gets=[_Interrupt("stop")])
+    with pytest.raises(_Interrupt):
+        go(tmp_path, fake)
+    shot = shot_of(tmp_path / "episode.yaml")
+    assert shot["generation_id"] == "gen-1"
+    assert shot["model"] == PREFERRED
+    assert len(fake.enqueues) == 1
+
+
+def test_start_frame_path_escape_is_error(tmp_path):
+    outer = tmp_path / "outer"
+    outer.mkdir()
+    (tmp_path / "escape.png").write_bytes(PNG)
+    manifest, cfg = setup(outer)
+    edit_manifest(manifest, lambda d: d["panels"][2].update(image="../escape.png"))
+    fake = Fake()
+    with pytest.raises(ShotError, match="start frame path escapes the manifest directory"):
+        go_made(outer, manifest, cfg, fake)
+    assert fake.calls == []
+
+
+@pytest.mark.parametrize("bad", [7, "", None], ids=["int", "empty", "null"])
+def test_corrupt_generation_id_is_error_zero_spend(tmp_path, bad):
+    manifest, cfg = setup(tmp_path)
+    edit_manifest(manifest, lambda d: d["arrival_shot"].update(generation_id=bad))
+    before = manifest.read_bytes()
+    fake = Fake()
+    with pytest.raises(
+        ShotError,
+        match="shot: generation_id must be a non-empty string; remove it to resubmit",
+    ):
+        go_made(tmp_path, manifest, cfg, fake)
+    assert fake.calls == []
+    assert not (tmp_path / "ledger.csv").exists() or rows(Ledger(tmp_path / "ledger.csv")) == []
+    assert manifest.read_bytes() == before
 
 
 def test_poll_404_is_failed_keeps_id(tmp_path):
