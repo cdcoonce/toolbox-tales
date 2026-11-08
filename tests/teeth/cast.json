@@ -84,7 +84,9 @@
       "file": "../../src/toolbox_tales/cast.py",
       "oracle": "real",
       "find": "        \"/\" in candidate\n        or \"\\\\\" in candidate",
-      "replace": "        False\n        or \"\\\\\" in candidate"
+      "replace": "        False\n        or \"\\\\\" in candidate",
+      "expect": "survived",
+      "why": "Shadowed: any candidate containing '/' also fails the candidate == Path(candidate).name guard, so no input reaches the slash clause alone (fixer proof, PR #20)."
     },
     {
       "label": "11 approve also drops voice",
