@@ -21,6 +21,7 @@ from toolbox_tales.spend import SpendConfig, authorize, estimate, load_config
 _NAME = re.compile(r"^[A-Za-z0-9_-]{1,40}$")
 _CANDIDATE = re.compile(r"^c(\d{2,})\.[^.]+$")
 _REQUIRED = ("name", "tool", "personality", "voice", "reference_image")
+_REF_EXTS = (".png", ".jpg", ".jpeg", ".webp")
 MIN_N, MAX_N = 1, 8
 
 
@@ -48,6 +49,24 @@ def _load_sheet(cast_path: Path) -> dict:
     if not isinstance(sheet, dict) or not isinstance(sheet.get("characters"), list):
         raise CastError("cast: cast sheet must be a mapping with a characters list")
     return sheet
+
+
+def _check_unique(sheet: dict) -> None:
+    seen: set[str] = set()
+    for char in sheet["characters"]:
+        if isinstance(char, dict) and isinstance(char.get("name"), str):
+            if char["name"] in seen:
+                raise CastError(f"cast: duplicate character name {char['name']!r}")
+            seen.add(char["name"])
+
+
+def _check_sheet(sheet: dict) -> None:
+    _check_unique(sheet)
+    for char in sheet["characters"]:
+        if not isinstance(char, dict) or any(not isinstance(char.get(k), str) for k in _REQUIRED):
+            raise CastError(
+                "cast: every character needs string name, tool, personality, voice and reference_image"
+            )
 
 
 def _character(sheet: dict, name: str) -> dict:
@@ -85,6 +104,7 @@ def generate_candidates(
     if isinstance(n, bool) or not isinstance(n, int) or not MIN_N <= n <= MAX_N:
         raise CastError("cast: --n must be 1 to 8")
     sheet = _load_sheet(cast_path)
+    _check_unique(sheet)
     style = sheet.get("style_prompt")
     if not isinstance(style, str):
         raise CastError("cast: style_prompt must be a string")
@@ -158,12 +178,24 @@ def _find_candidate(directory: Path, candidate: str) -> Path:
     return path
 
 
+def _check_regular(directory: Path, path: Path) -> None:
+    if (
+        path.is_symlink()
+        or not path.is_file()
+        or not path.resolve().is_relative_to(directory.resolve())
+    ):
+        raise CastError(f"cast: candidate {path.name!r} must be a regular file inside {directory}")
+
+
 def approve(cast_path: Path, name: str, candidate: str) -> Path:
     cast_path = Path(cast_path)
     _check_name(name)
     sheet = _load_sheet(cast_path)
+    _check_sheet(sheet)
     character = _character(sheet, name)
-    source = _find_candidate(_candidate_dir(cast_path, name), candidate)
+    directory = _candidate_dir(cast_path, name)
+    source = _find_candidate(directory, candidate)
+    _check_regular(directory, source)
     try:
         data = source.read_bytes()
     except OSError as exc:
@@ -174,6 +206,9 @@ def approve(cast_path: Path, name: str, candidate: str) -> Path:
     rel = f"refs/{name}{source.suffix.lower()}"
     ref = cast_path.parent / rel
     _write_atomic(ref, data)
+    for ext in _REF_EXTS:
+        if ext != source.suffix.lower():
+            (cast_path.parent / "refs" / f"{name}{ext}").unlink(missing_ok=True)
 
     character["reference_image"] = rel
     text = yaml.safe_dump(sheet, sort_keys=False, allow_unicode=True)

@@ -289,3 +289,15 @@ def test_approve_png_removes_stale_ref_of_other_suffix(tmp_path):
     (refs / "Gauge.jpg").write_bytes(b"\xff\xd8\xff" + b"\x00" * 8)
     approve(cast, "Teeth", "1")
     assert sorted(p.name for p in refs.iterdir()) == ["Gauge.jpg", "Teeth.png"]
+
+
+@pytest.mark.parametrize("candidate", ["c08.png", "8"])
+def test_approve_refuses_symlink_inside_candidate_dir(tmp_path, candidate):
+    # Containment alone would accept this link, so only the symlink check refuses it.
+    cast, d = seeded(tmp_path)
+    (d / "c08.png").symlink_to(d / "c01.png")
+    before = cast.read_bytes()
+    with pytest.raises(CastError):
+        approve(cast, "Teeth", candidate)
+    assert cast.read_bytes() == before
+    assert not (cast.parent / "refs").exists()
