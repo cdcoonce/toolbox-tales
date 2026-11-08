@@ -168,3 +168,84 @@ def test_generate_image_unreadable_2xx_is_image_response_error(body):
 
 def test_image_response_error_is_oxen_error():
     assert issubclass(ImageResponseError, OxenError)
+
+
+class Seq:
+    def __init__(self, *responses):
+        self.responses, self.requests = list(responses), []
+
+    def __call__(self, request):
+        self.requests.append(request)
+        status, body = self.responses.pop(0)
+        return status, body if isinstance(body, bytes) else json.dumps(body).encode()
+
+
+def seq_client(*responses):
+    t = Seq(*responses)
+    return OxenClient("k123", transport=t), t
+
+
+def test_enqueue_request_and_id():
+    c, t = seq_client((200, {"generations": [{"generation_id": "g1", "status": "queued"}]}))
+    assert c.enqueue("m", {"prompt": "p", "duration": 5}) == "g1"
+    req = t.requests[0]
+    assert req.get_method() == "POST"
+    assert req.full_url == "https://hub.oxen.ai/api/ai/queue"
+    assert json.loads(req.data) == {"model": "m", "prompt": "p", "duration": 5}
+    assert req.get_header("Authorization") == "Bearer k123"
+    assert req.get_header("Content-type") == "application/json"
+
+
+def test_enqueue_non_2xx():
+    c, _ = seq_client((500, b"x"))
+    with pytest.raises(OxenError, match="HTTP 500 enqueueing m"):
+        c.enqueue("m", {})
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {},
+        {"generations": []},
+        {"generations": [{}]},
+        {"generations": [{"generation_id": ""}]},
+        {"generations": [{"generation_id": 7}]},
+        {"generations": ["x"]},
+        b"not json",
+        [1],
+    ],
+)
+def test_enqueue_without_id(body):
+    c, _ = seq_client((200, body))
+    with pytest.raises(OxenError, match="queue response has no generation_id"):
+        c.enqueue("m", {})
+
+
+def test_get_generation_ok_and_url():
+    c, t = seq_client((200, {"status": "processing"}))
+    assert c.get_generation("g1") == {"status": "processing"}
+    req = t.requests[0]
+    assert req.get_method() == "GET"
+    assert req.full_url == "https://hub.oxen.ai/api/ai/queue/g1"
+    assert req.get_header("Authorization") == "Bearer k123"
+
+
+@pytest.mark.parametrize("status,body", [(404, b"x"), (200, b"nope"), (200, [1])])
+def test_get_generation_errors(status, body):
+    c, _ = seq_client((status, body))
+    with pytest.raises(OxenError):
+        c.get_generation("g1")
+
+
+def test_download_has_no_authorization_header():
+    c, t = seq_client((200, b"bytes"))
+    assert c.download("https://signed.example/r.mp4") == b"bytes"
+    req = t.requests[0]
+    assert req.full_url == "https://signed.example/r.mp4"
+    assert not req.has_header("Authorization")
+
+
+def test_download_non_2xx():
+    c, _ = seq_client((403, b"x"))
+    with pytest.raises(OxenError, match="HTTP 403 downloading result"):
+        c.download("https://signed.example/r.mp4")
