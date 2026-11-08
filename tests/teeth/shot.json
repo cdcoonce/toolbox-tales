@@ -1,0 +1,148 @@
+{
+  "runner": "pytest",
+  "test_command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests"
+  ],
+  "collect_command": [
+    "uv",
+    "run",
+    "pytest",
+    "--collect-only",
+    "-q",
+    "tests"
+  ],
+  "mutants": [
+    {
+      "label": "1 compare one shot not three",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "est.cost_usd * 3 <= remaining",
+      "replace": "est.cost_usd <= remaining"
+    },
+    {
+      "label": "2 always choose preferred",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "    if not _priced_for_three(est, remaining):",
+      "replace": "    if False:"
+    },
+    {
+      "label": "3 generate_audio True",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "params[\"generate_audio\"] = False",
+      "replace": "params[\"generate_audio\"] = True"
+    },
+    {
+      "label": "4 resolution 1080p",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "params[\"resolution\"] = \"720p\"",
+      "replace": "params[\"resolution\"] = \"1080p\""
+    },
+    {
+      "label": "5 refusal non-blocking before enqueue",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "        return ShotResult(\"spend-refused\", chosen, None, None, decision.reason)",
+      "replace": "        pass"
+    },
+    {
+      "label": "6 resume ignores saved id",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "    if isinstance(pending, str) and pending:",
+      "replace": "    if False:"
+    },
+    {
+      "label": "7 id written after polling",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "_update_manifest(manifest_path, {\"generation_id\": generation_id, \"model\": chosen}, ())\n    print(f\"submitted {generation_id} ({chosen})\", flush=True)\n    return _poll(\n        manifest_path, client, generation_id, chosen, video, settings, sleep, clock, measure\n    )",
+      "replace": "out = _poll(\n        manifest_path, client, generation_id, chosen, video, settings, sleep, clock, measure\n    )\n    _update_manifest(manifest_path, {\"generation_id\": generation_id, \"model\": chosen}, ())\n    print(f\"submitted {generation_id} ({chosen})\", flush=True)\n    return out"
+    },
+    {
+      "label": "8 ledger row appended twice per submission (no ledger in _poll; closest single-site anchor)",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "    ledger.append(est, output=f\"queue:{generation_id}\", actual_usd=est.cost_usd)\n",
+      "replace": "    ledger.append(est, output=f\"queue:{generation_id}\", actual_usd=est.cost_usd)\n    ledger.append(est, output=f\"queue:{generation_id}\", actual_usd=est.cost_usd)\n"
+    },
+    {
+      "label": "9 failed keeps id",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "_update_manifest(manifest_path, {}, (\"generation_id\",))",
+      "replace": "_update_manifest(manifest_path, {}, ())"
+    },
+    {
+      "label": "10 timeout clears id",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "            if clock() - start >= settings[\"timeout_s\"]:\n                return result(",
+      "replace": "            if clock() - start >= settings[\"timeout_s\"]:\n                _update_manifest(manifest_path, {}, (\"generation_id\",))\n                return result("
+    },
+    {
+      "label": "11 sleep 0 between polls",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "sleep(settings[\"poll_interval_s\"])",
+      "replace": "sleep(0)"
+    },
+    {
+      "label": "12 write requested seconds not measure",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "_update_manifest(manifest_path, {\"duration\": duration}",
+      "replace": "_update_manifest(manifest_path, {\"duration\": settings[\"seconds\"]}"
+    },
+    {
+      "label": "13 download sends bearer",
+      "file": "../../src/toolbox_tales/oxen.py",
+      "oracle": "real",
+      "find": "request = urllib.request.Request(url, method=\"GET\")",
+      "replace": "request = urllib.request.Request(url, headers={\"Authorization\": f\"Bearer {self.api_key}\"}, method=\"GET\")"
+    },
+    {
+      "label": "14 skip ftyp check",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "    if data[4:8] != b\"ftyp\":",
+      "replace": "    if False:"
+    },
+    {
+      "label": "15 start frame checked after get_prices",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "    if not start.is_file():\n        raise ShotError(f\"shot: start frame {start} is missing; run panels first\")\n    start_uri = _image_uri(start, \"shot: start frame\")\n\n    prompt = shot.get(\"prompt\")\n    prompt = prompt if isinstance(prompt, str) else \"\"\n    ref_uri: str | None = None\n    name = char.get(\"name\", \"\")\n    ref = char.get(\"reference_image\")\n    if isinstance(ref, str) and ref:\n        ref_uri = _image_uri(cast_dir / ref, f\"shot: reference for {name}\")\n\n    seconds = settings[\"seconds\"]\n    spent = ledger.total_spent()\n    remaining = config.total_cap_usd - spent\n    preferred = config.video_model\n    fallback = settings[\"fallback_video\"]\n    est = estimate(client.get_prices(preferred), preferred, \"video\", seconds)\n",
+      "replace": "\n    prompt = shot.get(\"prompt\")\n    prompt = prompt if isinstance(prompt, str) else \"\"\n    ref_uri: str | None = None\n    name = char.get(\"name\", \"\")\n    ref = char.get(\"reference_image\")\n    if isinstance(ref, str) and ref:\n        ref_uri = _image_uri(cast_dir / ref, f\"shot: reference for {name}\")\n\n    seconds = settings[\"seconds\"]\n    spent = ledger.total_spent()\n    remaining = config.total_cap_usd - spent\n    preferred = config.video_model\n    fallback = settings[\"fallback_video\"]\n    est = estimate(client.get_prices(preferred), preferred, \"video\", seconds)\n    if not start.is_file():\n        raise ShotError(f\"shot: start frame {start} is missing; run panels first\")\n    start_uri = _image_uri(start, \"shot: start frame\")\n"
+    },
+    {
+      "label": "16 CLI refusal exits 1",
+      "file": "../../src/toolbox_tales/cli.py",
+      "oracle": "real",
+      "find": "print(f\"spend: {result.message}\")\n        return 4",
+      "replace": "print(f\"spend: {result.message}\")\n        return 1"
+    },
+    {
+      "label": "17 [control] submitted reworded",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "expect": "survived",
+      "why": "The submitted progress line is informational stdout from the library; the spec lists it but no test is expected to grade the wording.",
+      "find": "print(f\"submitted {generation_id}",
+      "replace": "print(f\"queued {generation_id}"
+    },
+    {
+      "label": "18 start-frame path escape check removed (reviewer-added gap probe)",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "    try:\n        start.relative_to(base.resolve())\n    except ValueError:\n        raise ShotError(\"shot: start frame path escapes the manifest directory\") from None\n",
+      "replace": ""
+    }
+  ]
+}
