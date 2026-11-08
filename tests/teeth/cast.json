@@ -115,6 +115,34 @@
       "replace": "def _cast_approve(args: argparse.Namespace) -> int:\n    try:\n        require_key(\"OXEN_API_KEY\")\n    except MissingKeyError as exc:\n        print(exc)\n        return 2\n    try:\n        ref ="
     },
     {
+      "label": "16 duplicate names allowed",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "                raise CastError(f\"cast: duplicate character name {char['name']!r}\")",
+      "replace": "                pass"
+    },
+    {
+      "label": "17 approve validates sheet after write",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "    _check_sheet(sheet)\n    character = _character(sheet, name)",
+      "replace": "    character = _character(sheet, name)"
+    },
+    {
+      "label": "18 symlink candidate allowed",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "        path.is_symlink()\n        or not path.is_file()",
+      "replace": "        False\n        or not path.is_file()"
+    },
+    {
+      "label": "19 stale ref kept",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "        if ext != source.suffix.lower():",
+      "replace": "        if False:"
+    },
+    {
       "label": "15 [control] sheet temp-file suffix",
       "file": "../../src/toolbox_tales/cast.py",
       "oracle": "real",
