@@ -63,3 +63,15 @@ validated like any manifest, plus a 105-145 word dialogue check. Exit codes: 0 w
 (written as `<out>.draft` with the errors printed) or error, 2 metaphor rejected, 3 model refused
 or truncated, 4 spend guard refused. Needs `ANTHROPIC_API_KEY`; the cost is booked from actual
 usage in `ledger/spend.csv`.
+
+## Shot
+
+Generate the arrival shot through the Oxen async queue (paid, so it needs `--yes`):
+
+    uv run toolbox-tales shot tests/fixtures/episode.yaml [--yes]
+
+Needs `OXEN_API_KEY` and the panel the shot follows (run `panels` first). The preferred model is
+`[models] video`; if three attempts at its price exceed the remaining budget the cheaper
+`[shot] fallback_video` is used. The generation id is saved in the manifest, so an interrupted
+run resumes polling instead of paying again. Exit codes: 0 done or already there, 1 failed,
+cancelled, timed out or error, 2 no key, 4 spend guard refused.

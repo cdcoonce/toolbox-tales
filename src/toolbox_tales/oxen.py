@@ -135,3 +135,54 @@ class OxenClient:
             return base64.b64decode(encoded, validate=True)
         except (binascii.Error, ValueError) as exc:
             raise ImageResponseError(f"HTTP {status}: image b64_json is not valid base64") from exc
+
+    def enqueue(self, model: str, params: dict) -> str:
+        """Submit one job to the async queue and return its generation id."""
+        request = urllib.request.Request(
+            f"{self.base_url}/ai/queue",
+            data=json.dumps({"model": model, **params}).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        status, body = self.transport(request)
+        if not 200 <= status < 300:
+            raise OxenError(f"HTTP {status} enqueueing {model}")
+        try:
+            parsed = json.loads(body)
+        except (ValueError, UnicodeDecodeError):
+            parsed = None
+        generations = parsed.get("generations") if isinstance(parsed, dict) else None
+        first = generations[0] if isinstance(generations, list) and generations else None
+        generation_id = first.get("generation_id") if isinstance(first, dict) else None
+        if not isinstance(generation_id, str) or not generation_id:
+            raise OxenError("queue response has no generation_id")
+        return generation_id
+
+    def get_generation(self, generation_id: str) -> dict:
+        """Read one queued generation's state."""
+        request = urllib.request.Request(
+            f"{self.base_url}/ai/queue/{generation_id}",
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            method="GET",
+        )
+        status, body = self.transport(request)
+        if not 200 <= status < 300:
+            raise OxenError(f"HTTP {status} reading generation {generation_id}")
+        try:
+            parsed = json.loads(body)
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise OxenError(f"generation {generation_id}: response is not JSON") from exc
+        if not isinstance(parsed, dict):
+            raise OxenError(f"generation {generation_id}: response is not a JSON object")
+        return parsed
+
+    def download(self, url: str) -> bytes:
+        """Fetch a signed result URL. No Authorization header: the key stays off other hosts."""
+        request = urllib.request.Request(url, method="GET")
+        status, body = self.transport(request)
+        if not 200 <= status < 300:
+            raise OxenError(f"HTTP {status} downloading result")
+        return body

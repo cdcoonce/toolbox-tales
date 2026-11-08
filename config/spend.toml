@@ -16,3 +16,9 @@ est_output_tokens = 8000   # covers thinking tokens, which bill as output
 [panels]
 references = true   # flux-2-dev request_schema lists input_image (checked 2026-11-01)
 aspect_ratio = "16:9"
+
+[shot]
+fallback_video = "kling-video-v2-5-turbo-pro-image-to-video"   # $0.07/s, start frame, min 5 s (2026-11-08)
+seconds = 5
+poll_interval_s = 15
+timeout_s = 1200

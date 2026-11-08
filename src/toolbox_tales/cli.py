@@ -13,6 +13,7 @@ import yaml
 from toolbox_tales import panels as panels_mod
 from toolbox_tales import render as render_mod
 from toolbox_tales import script as script_mod
+from toolbox_tales import shot as shot_mod
 from toolbox_tales import voice as voice_mod
 from toolbox_tales.env import MissingKeyError, require_key
 from toolbox_tales.ledger import Ledger, LedgerError
@@ -264,6 +265,45 @@ def _panels(args: argparse.Namespace, client_factory: ClientFactory | None) -> i
     return 1 if result.failures else 0
 
 
+def _shot(args: argparse.Namespace, client_factory: ClientFactory | None) -> int:
+    try:
+        key = require_key("OXEN_API_KEY")
+    except MissingKeyError as exc:
+        print(exc)
+        return 2
+    client = (client_factory or (lambda k: OxenClient(k)))(key)
+    try:
+        config = load_config()
+    except (TypeError, ValueError, tomllib.TOMLDecodeError, OSError) as exc:
+        print(f"config: {exc}")
+        return 1
+    try:
+        result = shot_mod.make_shot(
+            Path(args.manifest), client, confirmed=args.yes, ledger=Ledger(), config=config
+        )
+    except shot_mod.ShotError as exc:
+        print(exc)
+        return 1
+    except OxenError as exc:
+        print(exc)
+        return 1
+    except LedgerError as exc:
+        print(f"ledger: {exc}")
+        return 1
+    status = result.status
+    if status == "exists":
+        print(f"exists {result.message}")
+        return 0
+    if status == "succeeded":
+        print(f"succeeded {result.message} ({result.duration_s} s, {result.model})")
+        return 0
+    if status == "spend-refused":
+        print(f"spend: {result.message}")
+        return 4
+    print(f"{status}: {result.message}")
+    return 1
+
+
 def main(argv: Sequence[str] | None = None, client_factory: ClientFactory | None = None) -> int:
     parser = argparse.ArgumentParser(prog="toolbox-tales")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -290,7 +330,13 @@ def main(argv: Sequence[str] | None = None, client_factory: ClientFactory | None
     pan.add_argument("manifest")
     pan.add_argument("--panel", type=int, help="regenerate only this 1-based panel")
     pan.add_argument("--yes", action="store_true", help="confirm the paid calls")
+    sho = sub.add_parser("shot", help="generate the arrival shot with Oxen")
+    sho.add_argument("manifest")
+    sho.add_argument("--yes", action="store_true", help="confirm the paid call")
     args = parser.parse_args(argv)
+
+    if args.command == "shot":
+        return _shot(args, client_factory)
 
     if args.command == "panels":
         return _panels(args, client_factory)
