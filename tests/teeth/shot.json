@@ -55,7 +55,7 @@
       "label": "6 resume ignores saved id",
       "file": "../../src/toolbox_tales/shot.py",
       "oracle": "real",
-      "find": "    if isinstance(pending, str) and pending:",
+      "find": "    if isinstance(pending, str):",
       "replace": "    if False:"
     },
     {
@@ -129,13 +129,13 @@
       "replace": "print(f\"spend: {result.message}\")\n        return 1"
     },
     {
-      "label": "17 [control] submitted reworded",
+      "label": "17 [control] atomic temp-file suffix renamed",
       "file": "../../src/toolbox_tales/shot.py",
       "oracle": "real",
       "expect": "survived",
-      "why": "The submitted progress line is informational stdout from the library; the spec lists it but no test is expected to grade the wording.",
-      "find": "print(f\"submitted {generation_id}",
-      "replace": "print(f\"queued {generation_id}"
+      "why": "The atomic-write temp suffix is an implementation detail that is renamed away by os.replace, so no test grades it.",
+      "find": "suffix=\".tmp\"",
+      "replace": "suffix=\".part\""
     },
     {
       "label": "18 start-frame path escape check removed (reviewer-added gap probe)",
@@ -143,6 +143,13 @@
       "oracle": "real",
       "find": "    try:\n        start.relative_to(base.resolve())\n    except ValueError:\n        raise ShotError(\"shot: start frame path escapes the manifest directory\") from None\n",
       "replace": ""
+    },
+    {
+      "label": "19 corrupt generation_id refused before spend",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "    if \"generation_id\" in shot and (not isinstance(pending, str) or not pending):\n        raise ShotError(\"shot: generation_id must be a non-empty string; remove it to resubmit\")\n    if isinstance(pending, str):\n",
+      "replace": "    if isinstance(pending, str) and pending:\n"
     }
   ]
 }
