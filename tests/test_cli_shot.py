@@ -56,8 +56,12 @@ def repo(tmp_path, monkeypatch):
     (ep / "media/fixture/p3.png").write_bytes(PNG)
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("OXEN_API_KEY", "k")
-    monkeypatch.setattr(shot.time, "sleep", lambda s: None)
-    monkeypatch.setattr(shot, "ffprobe_duration", lambda p: 5.0)
+    real = shot.make_shot
+    monkeypatch.setattr(
+        shot,
+        "make_shot",
+        lambda *a, **kw: real(*a, sleep=lambda s: None, measure=lambda p: 5.0, **kw),
+    )
     return tmp_path
 
 
@@ -100,7 +104,10 @@ def test_failed_cancelled_exit_1(repo, capsys, status):
 
 def test_timeout_exit_1(repo, capsys, monkeypatch):
     ticks = iter(range(0, 100000, 400))
-    monkeypatch.setattr(shot.time, "monotonic", lambda: next(ticks))
+    real = shot.make_shot
+    monkeypatch.setattr(
+        shot, "make_shot", lambda *a, **kw: real(*a, clock=lambda: next(ticks), **kw)
+    )
     assert run(Fake(statuses=("processing",)), "--yes") == 1
     assert "timeout: " in capsys.readouterr().out
 
