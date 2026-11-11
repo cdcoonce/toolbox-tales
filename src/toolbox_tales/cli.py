@@ -10,6 +10,7 @@ from pathlib import Path
 import anthropic
 import yaml
 
+from toolbox_tales import cast as cast_mod
 from toolbox_tales import panels as panels_mod
 from toolbox_tales import render as render_mod
 from toolbox_tales import script as script_mod
@@ -304,6 +305,57 @@ def _shot(args: argparse.Namespace, client_factory: ClientFactory | None) -> int
     return 1
 
 
+def _cast_generate(args: argparse.Namespace, client_factory: ClientFactory | None) -> int:
+    try:
+        key = require_key("OXEN_API_KEY")
+    except MissingKeyError as exc:
+        print(exc)
+        return 2
+    client = (client_factory or (lambda k: OxenClient(k)))(key)
+    try:
+        config = load_config()
+    except (TypeError, ValueError, tomllib.TOMLDecodeError, OSError) as exc:
+        print(f"config: {exc}")
+        return 1
+    try:
+        result = cast_mod.generate_candidates(
+            Path(args.cast),
+            args.name,
+            args.n,
+            client,
+            confirmed=args.yes,
+            ledger=Ledger(),
+            config=config,
+        )
+    except cast_mod.CastError as exc:
+        print(exc)
+        return 1
+    except OxenError as exc:
+        print(exc)
+        return 1
+    except LedgerError as exc:
+        print(f"ledger: {exc}")
+        return 1
+    for path in result.written:
+        print(f"wrote {path}")
+    for failure in result.failures:
+        print(f"cast: {failure}")
+    if result.refused is not None:
+        print(f"spend: {result.refused}")
+        return 4
+    return 1 if result.failures else 0
+
+
+def _cast_approve(args: argparse.Namespace) -> int:
+    try:
+        ref = cast_mod.approve(Path(args.cast), args.name, args.candidate)
+    except cast_mod.CastError as exc:
+        print(exc)
+        return 1
+    print(f"approved {args.name} -> {ref}")
+    return 0
+
+
 def main(argv: Sequence[str] | None = None, client_factory: ClientFactory | None = None) -> int:
     parser = argparse.ArgumentParser(prog="toolbox-tales")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -333,7 +385,23 @@ def main(argv: Sequence[str] | None = None, client_factory: ClientFactory | None
     sho = sub.add_parser("shot", help="generate the arrival shot with Oxen")
     sho.add_argument("manifest")
     sho.add_argument("--yes", action="store_true", help="confirm the paid call")
+    cas = sub.add_parser("cast", help="generate and approve cast reference images")
+    cast_sub = cas.add_subparsers(dest="cast_command", required=True)
+    cgen = cast_sub.add_parser("generate", help="generate candidate images for one character")
+    cgen.add_argument("name")
+    cgen.add_argument("--cast", default="cast/cast.yaml", help="cast sheet YAML")
+    cgen.add_argument("--n", type=int, default=4, help="candidates to generate (1 to 8)")
+    cgen.add_argument("--yes", action="store_true", help="confirm the paid calls")
+    capp = cast_sub.add_parser("approve", help="approve one candidate as the reference image")
+    capp.add_argument("name")
+    capp.add_argument("candidate", help="candidate number or file name")
+    capp.add_argument("--cast", default="cast/cast.yaml", help="cast sheet YAML")
     args = parser.parse_args(argv)
+
+    if args.command == "cast":
+        if args.cast_command == "generate":
+            return _cast_generate(args, client_factory)
+        return _cast_approve(args)
 
     if args.command == "shot":
         return _shot(args, client_factory)

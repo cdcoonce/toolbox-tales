@@ -75,3 +75,15 @@ Needs `OXEN_API_KEY` and the panel the shot follows (run `panels` first). The pr
 `[shot] fallback_video` is used. The generation id is saved in the manifest, so an interrupted
 run resumes polling instead of paying again. Exit codes: 0 done or already there, 1 failed,
 cancelled, timed out or error, 2 no key, 4 spend guard refused.
+
+## Cast
+
+Generate candidate images for one character (paid, so it needs `--yes`), then approve one:
+
+    uv run toolbox-tales cast generate Teeth [--cast cast/cast.yaml] [--n 4] [--yes]
+    uv run toolbox-tales cast approve Teeth 3 [--cast cast/cast.yaml]
+
+`generate` needs `OXEN_API_KEY`; it saves `c01.png`, `c02.png`, ... under `media/cast/<name>/`
+next to the cast sheet (never overwriting) and never edits the sheet. `approve` needs no key: it
+copies the candidate (a number or a file name) to `refs/<name>.<ext>` and sets that character's
+`reference_image`. Exit codes: 0 done, 1 failure, 2 no key, 4 spend guard refused.
