@@ -1,0 +1,106 @@
+{
+  "runner": "pytest",
+  "test_command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests"
+  ],
+  "collect_command": [
+    "uv",
+    "run",
+    "pytest",
+    "--collect-only",
+    "-q",
+    "tests"
+  ],
+  "mutants": [
+    {
+      "label": "1 candidate prompt carries the name again",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "f\"{style}. {personality} One character,",
+      "replace": "f\"{style}. Character design sheet for {name}. {personality} One character,"
+    },
+    {
+      "label": "2 candidate extension always .png",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "path = stem.with_suffix(_KIND_EXT[kind])",
+      "replace": "path = stem.with_suffix(\".png\")"
+    },
+    {
+      "label": "3 jpeg candidate named .jpeg",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "\"jpeg\": \".jpg\", \"webp\": \".webp\"}\n_SUFFIX_KIND",
+      "replace": "\"jpeg\": \".jpeg\", \"webp\": \".webp\"}\n_SUFFIX_KIND"
+    },
+    {
+      "label": "4 numbering counts only .png",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "_CANDIDATE = re.compile(r\"^c(\\d{2,})\\.[^.]+$\")",
+      "replace": "_CANDIDATE = re.compile(r\"^c(\\d{2,})\\.png$\")"
+    },
+    {
+      "label": "5 non-image ledger output gets .png",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "    if kind is None:\n            ledger.append(est, output=bare, actual_usd=est.cost_usd)",
+      "replace": "    if kind is None:\n            ledger.append(est, output=f\"{bare}.png\", actual_usd=est.cost_usd)"
+    },
+    {
+      "label": "6 approve drops suffix/kind mismatch refusal",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "if _SUFFIX_KIND.get(source.suffix.lower()) != kind:",
+      "replace": "if False:"
+    },
+    {
+      "label": "7 panels data URI type from suffix",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "return f\"data:image/{kind};base64,",
+      "replace": "return f\"data:image/{mime};base64,"
+    },
+    {
+      "label": "8 panels skips junk reference bytes check",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "    kind = _image_kind(data)\n    if kind is None:\n        raise fail(",
+      "replace": "    kind = _image_kind(data)\n    if False:\n        raise fail("
+    },
+    {
+      "label": "9 shot data URI type from suffix",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "return f\"data:image/{kind};base64,",
+      "replace": "return f\"data:image/{mime};base64,"
+    },
+    {
+      "label": "10 shot skips junk start frame bytes check",
+      "file": "../../src/toolbox_tales/shot.py",
+      "oracle": "real",
+      "find": "    kind = _image_kind(data)\n    if kind is None:\n        raise ShotError(",
+      "replace": "    kind = _image_kind(data)\n    if False:\n        raise ShotError("
+    },
+    {
+      "label": "11 sniffer requires WEBX at 8:12",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "data[8:12] == b\"WEBP\"",
+      "replace": "data[8:12] == b\"WEBX\""
+    },
+    {
+      "label": "12 [control] approve mismatch message tail",
+      "file": "../../src/toolbox_tales/cast.py",
+      "oracle": "real",
+      "find": "and try again\"",
+      "replace": "and retry\"",
+      "expect": "survived",
+      "why": "No test pins the tail wording of the approve suffix/kind mismatch message; CastError is asserted without a match, so rewording the hint changes no behaviour under test."
+    }
+  ]
+}
