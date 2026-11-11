@@ -18,6 +18,7 @@ from toolbox_tales.spend import load_config
 
 FIXTURES = Path(__file__).parent / "fixtures"
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 24
+WEBP = b"RIFF\x10\x00\x00\x00WEBPVP8 " + b"\x00" * 8
 PRICE_BODY = {"cost_per_image": 0.5}
 SPEND = (
     "per_call_cap_usd = 3.0\ntotal_cap_usd = 25.0\n"
@@ -235,6 +236,24 @@ def test_missing_reference_fails_before_any_call(tmp_path):
             panels_section=REFS_ON,
             cast_edit=_with_ref(tmp_path, "refs/none.png", create=False),
         )
+    assert fake.calls == []
+
+
+def test_reference_mime_comes_from_bytes(tmp_path):
+    fake = Fake()
+    edit = _with_ref(tmp_path)
+    (tmp_path / "refs/teeth.png").write_bytes(WEBP)
+    run(tmp_path, fake, panels_section=REFS_ON, cast_edit=edit)
+    body = fake.generates[2][3]
+    assert body["input_image"][0].startswith("data:image/webp;base64,")
+
+
+def test_reference_junk_bytes_refused_before_any_call(tmp_path):
+    fake = Fake()
+    edit = _with_ref(tmp_path)
+    (tmp_path / "refs/teeth.png").write_bytes(b"not an image at all")
+    with pytest.raises(PanelsError, match="is not a PNG, JPEG or WebP image"):
+        run(tmp_path, fake, panels_section=REFS_ON, cast_edit=edit)
     assert fake.calls == []
 
 
