@@ -27,8 +27,8 @@
       "label": "2 generate before authorize",
       "file": "../../src/toolbox_tales/cast.py",
       "oracle": "real",
-      "find": "        decision = authorize(est, confirmed, ledger.total_spent(), config)\n        if not decision.allowed:\n            refused = decision.reason\n            break\n        path = directory / f\"c{number:02d}.png\"\n        rel = path.relative_to(cast_path.parent).as_posix()\n",
-      "replace": "        path = directory / f\"c{number:02d}.png\"\n        rel = path.relative_to(cast_path.parent).as_posix()\n        client.generate_image(model, prompt, None, \"1:1\")\n        decision = authorize(est, confirmed, ledger.total_spent(), config)\n        if not decision.allowed:\n            refused = decision.reason\n            break\n"
+      "find": "        decision = authorize(est, confirmed, ledger.total_spent(), config)\n        if not decision.allowed:\n            refused = decision.reason\n            break\n        stem = directory / f\"c{number:02d}\"\n        bare = stem.relative_to(cast_path.parent).as_posix()\n",
+      "replace": "        stem = directory / f\"c{number:02d}\"\n        bare = stem.relative_to(cast_path.parent).as_posix()\n        client.generate_image(model, prompt, None, \"1:1\")\n        decision = authorize(est, confirmed, ledger.total_spent(), config)\n        if not decision.allowed:\n            refused = decision.reason\n            break\n"
     },
     {
       "label": "3 total read once before loop",
@@ -41,8 +41,8 @@
       "label": "4 no ledger row on non-image bytes",
       "file": "../../src/toolbox_tales/cast.py",
       "oracle": "real",
-      "find": "        ledger.append(est, output=rel, actual_usd=est.cost_usd)\n        if not _is_image(data):\n            failures.append(f\"candidate {number:02d}: response is not an image\")\n            continue\n",
-      "replace": "        if not _is_image(data):\n            failures.append(f\"candidate {number:02d}: response is not an image\")\n            continue\n        ledger.append(est, output=rel, actual_usd=est.cost_usd)\n"
+      "find": "        if kind is None:\n            ledger.append(est, output=bare, actual_usd=est.cost_usd)\n",
+      "replace": "        if kind is None:\n"
     },
     {
       "label": "5 ledger row before the call",
@@ -69,8 +69,8 @@
       "label": "8 drop style prompt",
       "file": "../../src/toolbox_tales/cast.py",
       "oracle": "real",
-      "find": "f\"{style}. Character design sheet for {name}. {personality} \"",
-      "replace": "f\"Character design sheet for {name}. {personality} \""
+      "find": "f\"{style}. {personality} One character,",
+      "replace": "f\"{personality} One character,"
     },
     {
       "label": "9 aspect 16:9",
@@ -99,7 +99,7 @@
       "label": "12 approve skips image check",
       "file": "../../src/toolbox_tales/cast.py",
       "oracle": "real",
-      "find": "    if not _is_image(data):\n        raise CastError(",
+      "find": "    if kind is None:\n        raise CastError(",
       "replace": "    if False:\n        raise CastError("
     },
     {
