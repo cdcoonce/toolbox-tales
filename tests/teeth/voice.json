@@ -90,8 +90,8 @@
       "label": "11 CLI exits 0 on line failures",
       "file": "../../src/toolbox_tales/cli.py",
       "oracle": "real",
-      "find": "return 1 if result.failures else 0",
-      "replace": "return 0"
+      "find": "print(f\"voice: {failure}\")\n    return 1 if result.failures else 0",
+      "replace": "print(f\"voice: {failure}\")\n    return 0"
     },
     {
       "label": "12 non-atomic write-back (direct write, no replace)",

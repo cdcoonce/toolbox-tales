@@ -97,8 +97,8 @@
       "label": "10 Token auth scheme instead of Bearer",
       "file": "../../src/toolbox_tales/oxen.py",
       "oracle": "double",
-      "find": "f\"Bearer {self.api_key}\"",
-      "replace": "f\"Token {self.api_key}\""
+      "find": "f\"{self.base_url}/ai/models/{model_id}\",\n            headers={\"Authorization\": f\"Bearer {self.api_key}\"",
+      "replace": "f\"{self.base_url}/ai/models/{model_id}\",\n            headers={\"Authorization\": f\"Token {self.api_key}\""
     },
     {
       "label": "11 negative price passes through",
@@ -125,22 +125,22 @@
       "label": "14 missing key exits 1",
       "file": "../../src/toolbox_tales/cli.py",
       "oracle": "real",
-      "find": "return 2",
-      "replace": "return 1"
+      "find": "print(exc)\n            return 2\n        client = (client_factory or (lambda k: OxenClient(k)))(key)",
+      "replace": "print(exc)\n            return 1\n        client = (client_factory or (lambda k: OxenClient(k)))(key)"
     },
     {
       "label": "fix-c config load errors propagate",
       "file": "../../src/toolbox_tales/cli.py",
       "oracle": "real",
-      "find": "except (TypeError, ValueError, tomllib.TOMLDecodeError, OSError) as exc:",
-      "replace": "except ZeroDivisionError as exc:"
+      "find": "except (TypeError, ValueError, tomllib.TOMLDecodeError, OSError) as exc:\n            print(f\"config: {exc}\")\n            return 1\n        try:\n            if args.command == \"price\":",
+      "replace": "except ZeroDivisionError as exc:\n            print(f\"config: {exc}\")\n            return 1\n        try:\n            if args.command == \"price\":"
     },
     {
       "label": "fix-d ledger errors propagate",
       "file": "../../src/toolbox_tales/cli.py",
       "oracle": "real",
-      "find": "except LedgerError as exc:",
-      "replace": "except ZeroDivisionError as exc:"
+      "find": "except OxenError as exc:\n            print(exc)\n            return 1\n        except LedgerError as exc:",
+      "replace": "except OxenError as exc:\n            print(exc)\n            return 1\n        except ZeroDivisionError as exc:"
     },
     {
       "label": "15 [control] price subparser help text",
