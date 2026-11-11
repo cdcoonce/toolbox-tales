@@ -131,9 +131,18 @@ def test_committed_config_loads():
     assert c.image_model == "flux-2-dev"
 
 
-def test_committed_ledger_is_header_only():
+def test_committed_ledger_is_well_formed():
+    # The ledger is append-only real spend, so pin its shape, never its row count.
+    import csv
     from pathlib import Path
 
     root = Path(__file__).resolve().parent.parent
-    text = (root / "ledger" / "spend.csv").read_text()
-    assert text.strip() == "timestamp,model,kind,quantity,estimated_usd,actual_usd,output"
+    with (root / "ledger" / "spend.csv").open(newline="") as fh:
+        rows = list(csv.reader(fh))
+    header = ["timestamp", "model", "kind", "quantity", "estimated_usd", "actual_usd", "output"]
+    assert rows[0] == header
+    for row in rows[1:]:
+        assert len(row) == len(header)
+        assert float(row[4]) >= 0 and float(row[5]) >= 0
+    total = sum(float(row[5]) for row in rows[1:])
+    assert total <= load_config(root / "config" / "spend.toml").total_cap_usd
