@@ -1,0 +1,35 @@
+style_prompt: 1950s woodworking manual illustration, halftone shading, two-color print
+  in walnut brown and safety orange on cream paper, technical cutaway, tools drawn
+  as characters with simple expressive faces, wordless illustration with no lettering,
+  labels or captions anywhere
+characters:
+- name: Teeth
+  tool: detector-teeth-check
+  personality: A steel table-saw blade guard with a stern visor face, short sturdy
+    arms and work boots.
+  voice: en-US-AndrewNeural
+  reference_image: refs/Teeth.webp
+- name: Gauge
+  tool: tdd
+  personality: A wooden marking gauge with a brass pin, a careful squint and a pencil
+    tucked under one arm.
+  voice: en-US-AvaNeural
+  reference_image: refs/Gauge.webp
+- name: Foreman
+  tool: build-review-land
+  personality: A battered aluminium clipboard with a pencil tucked behind its clip
+    and a dented hard hat.
+  voice: en-US-BrianNeural
+  reference_image: refs/Foreman.webp
+- name: Lockout
+  tool: hold-scan
+  personality: A red lockout padlock with a stern face and a blank paper tag tied
+    to its shackle.
+  voice: en-US-EmmaNeural
+  reference_image: refs/Lockout.webp
+- name: Logbook
+  tool: handoff
+  personality: A cloth-bound shift logbook with a worn spine and a friendly face,
+    hanging from a loop of string.
+  voice: en-GB-RyanNeural
+  reference_image: refs/Logbook.webp
