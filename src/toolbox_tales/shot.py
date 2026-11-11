@@ -20,6 +20,7 @@ import yaml
 from toolbox_tales.ledger import Ledger
 from toolbox_tales.manifest import load_and_validate
 from toolbox_tales.oxen import OxenClient, OxenError
+from toolbox_tales.panels import _image_kind
 from toolbox_tales.spend import Estimate, SpendConfig, authorize, estimate, load_config
 from toolbox_tales.voice import VoiceError, ffprobe_duration
 
@@ -80,7 +81,10 @@ def _image_uri(path: Path, label: str) -> str:
         data = path.read_bytes()
     except OSError as exc:
         raise ShotError(f"{label}: cannot read {path.name}: {exc}") from exc
-    return f"data:image/{mime};base64,{base64.b64encode(data).decode('ascii')}"
+    kind = _image_kind(data)
+    if kind is None:
+        raise ShotError(f"{label}: {path.name} is not a PNG, JPEG or WebP image")
+    return f"data:image/{kind};base64,{base64.b64encode(data).decode('ascii')}"
 
 
 def _write_atomic(path: Path, data: bytes) -> None:

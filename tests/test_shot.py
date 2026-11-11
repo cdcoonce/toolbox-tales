@@ -19,6 +19,7 @@ from toolbox_tales.spend import Estimate, load_config
 
 FIXTURES = Path(__file__).parent / "fixtures"
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 24
+JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 24
 MP4 = b"\x00\x00\x00\x18ftypmp42" + b"\x00" * 32
 PREFERRED = "kling-video-o3-omni"
 FALLBACK = "kling-video-v2-5-turbo-pro-image-to-video"
@@ -292,6 +293,25 @@ def test_missing_reference_file_fails(tmp_path):
     with pytest.raises(ShotError, match="shot: reference for Teeth"):
         go_made(tmp_path, manifest, cfg, fake)
     assert fake.calls == []
+
+
+def test_start_frame_mime_comes_from_bytes(tmp_path):
+    manifest, cfg = setup(tmp_path)
+    (tmp_path / "media/fixture/p3.png").write_bytes(JPEG)
+    fake = Fake()
+    go_made(tmp_path, manifest, cfg, fake)
+    body = fake.enqueues[0][3]
+    assert body["input_image"].startswith("data:image/jpeg;base64,")
+
+
+def test_start_frame_junk_bytes_refused_before_any_request(tmp_path):
+    manifest, cfg = setup(tmp_path)
+    (tmp_path / "media/fixture/p3.png").write_bytes(b"not an image at all")
+    fake = Fake()
+    with pytest.raises(ShotError, match="p3.png is not a PNG, JPEG or WebP image"):
+        go_made(tmp_path, manifest, cfg, fake)
+    assert fake.calls == []
+    assert not (tmp_path / "ledger.csv").exists()
 
 
 def test_missing_start_frame_is_error_with_zero_requests(tmp_path):

@@ -18,6 +18,8 @@ from toolbox_tales.spend import load_config
 FIXTURES = Path(__file__).parent / "fixtures"
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 24
 PNG2 = b"\x89PNG\r\n\x1a\n" + b"\x01" * 24
+WEBP = b"RIFF\x10\x00\x00\x00WEBPVP8 " + b"\x00" * 8
+JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 24
 SPEND = (
     "per_call_cap_usd = 3.0\ntotal_cap_usd = 25.0\n"
     '[models]\nimage = "flux-2-dev"\nvideo = ""\n'
@@ -90,10 +92,10 @@ def test_generate_three(tmp_path):
     assert "media/cast/Teeth/c01.png" in r[0]
     sheet = yaml.safe_load(cast.read_text())
     expected = (
-        f"{sheet['style_prompt']}. Character design sheet for Teeth. "
-        f"{sheet['characters'][0]['personality']} "
+        f"{sheet['style_prompt']}. {sheet['characters'][0]['personality']} "
         "One character, full figure, centered, plain background, no text."
     )
+    assert "Teeth" not in expected
     for _, body in fake.generates:
         assert body["aspect_ratio"] == "1:1"
         assert "input_image" not in body
@@ -152,7 +154,9 @@ def test_2xx_non_image_logged_not_written(tmp_path):
     result, ledger, cast = gen(tmp_path, fake, n=1)
     assert result.failures == ("candidate 01: response is not an image",)
     assert len(rows(ledger)) == 1
+    assert rows(ledger)[0].endswith(",media/cast/Teeth/c01")
     assert not (cast.parent / "media/cast/Teeth/c01.png").exists()
+    assert list((cast.parent / "media/cast/Teeth").glob("c01*")) == []
 
 
 def test_generate_leaves_sheet_identical(tmp_path):
@@ -299,5 +303,51 @@ def test_approve_refuses_symlink_inside_candidate_dir(tmp_path, candidate):
     before = cast.read_bytes()
     with pytest.raises(CastError):
         approve(cast, "Teeth", candidate)
+    assert cast.read_bytes() == before
+    assert not (cast.parent / "refs").exists()
+
+
+@pytest.mark.parametrize(("payload", "ext"), [(WEBP, ".webp"), (JPEG, ".jpg"), (PNG, ".png")])
+def test_extension_from_sniffed_kind(tmp_path, payload, ext):
+    result, ledger, cast = gen(tmp_path, Fake(payload=payload), n=1)
+    d = cast.parent / "media/cast/Teeth"
+    assert [p.name for p in result.written] == [f"c01{ext}"]
+    assert (d / f"c01{ext}").read_bytes() == payload
+    assert f"media/cast/Teeth/c01{ext}" in rows(ledger)[0]
+
+
+def test_numbering_counts_any_extension(tmp_path):
+    make(tmp_path)
+    d = tmp_path / "cast/media/cast/Teeth"
+    d.mkdir(parents=True)
+    (d / "c01.png").write_bytes(PNG)
+    (d / "c02.webp").write_bytes(WEBP)
+    result, _, _ = gen(tmp_path, Fake(payload=WEBP), n=1)
+    assert [p.name for p in result.written] == ["c03.webp"]
+
+
+def test_non_image_ledger_output_has_no_extension(tmp_path):
+    _, ledger, cast = gen(tmp_path, Fake(payload=b"junk"), n=1)
+    assert rows(ledger)[0].endswith(",media/cast/Teeth/c01")
+    assert not (cast.parent / "media/cast/Teeth").exists() or not any(
+        (cast.parent / "media/cast/Teeth").iterdir()
+    )
+
+
+def test_approve_webp_candidate_keeps_webp_suffix(tmp_path):
+    gen(tmp_path, Fake(payload=WEBP), n=1)
+    cast = tmp_path / "cast" / "cast.yaml"
+    ref = approve(cast, "Teeth", "1")
+    assert ref == cast.parent / "refs/Teeth.webp"
+    assert ref.read_bytes() == WEBP
+    assert yaml.safe_load(cast.read_text())["characters"][0]["reference_image"] == "refs/Teeth.webp"
+
+
+def test_approve_refuses_suffix_kind_mismatch(tmp_path):
+    cast, d = seeded(tmp_path)
+    (d / "c09.png").write_bytes(WEBP)
+    before = cast.read_bytes()
+    with pytest.raises(CastError, match=r"\.webp"):
+        approve(cast, "Teeth", "c09.png")
     assert cast.read_bytes() == before
     assert not (cast.parent / "refs").exists()
