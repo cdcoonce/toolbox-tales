@@ -15,13 +15,15 @@ import yaml
 
 from toolbox_tales.ledger import Ledger
 from toolbox_tales.oxen import ImageResponseError, OxenClient, OxenError
-from toolbox_tales.panels import _is_image, _write_atomic
+from toolbox_tales.panels import _image_kind, _write_atomic
 from toolbox_tales.spend import SpendConfig, authorize, estimate, load_config
 
 _NAME = re.compile(r"^[A-Za-z0-9_-]{1,40}$")
 _CANDIDATE = re.compile(r"^c(\d{2,})\.[^.]+$")
 _REQUIRED = ("name", "tool", "personality", "voice", "reference_image")
 _REF_EXTS = (".png", ".jpg", ".jpeg", ".webp")
+_KIND_EXT = {"png": ".png", "jpeg": ".jpg", "webp": ".webp"}
+_SUFFIX_KIND = {".png": "png", ".jpg": "jpeg", ".jpeg": "jpeg", ".webp": "webp"}
 MIN_N, MAX_N = 1, 8
 
 
@@ -116,8 +118,7 @@ def generate_candidates(
     ledger = ledger or Ledger()
 
     prompt = (
-        f"{style}. Character design sheet for {name}. {personality} "
-        "One character, full figure, centered, plain background, no text."
+        f"{style}. {personality} One character, full figure, centered, plain background, no text."
     )
     directory = _candidate_dir(cast_path, name)
     first = _highest(directory) + 1
@@ -133,21 +134,24 @@ def generate_candidates(
         if not decision.allowed:
             refused = decision.reason
             break
-        path = directory / f"c{number:02d}.png"
-        rel = path.relative_to(cast_path.parent).as_posix()
+        stem = directory / f"c{number:02d}"
+        bare = stem.relative_to(cast_path.parent).as_posix()
         try:
             data = client.generate_image(model, prompt, None, "1:1")
         except ImageResponseError as exc:
-            ledger.append(est, output=rel, actual_usd=est.cost_usd)
+            ledger.append(est, output=bare, actual_usd=est.cost_usd)
             failures.append(f"candidate {number:02d}: {exc}")
             continue
         except OxenError as exc:
             failures.append(f"candidate {number:02d}: {exc}")
             continue
-        ledger.append(est, output=rel, actual_usd=est.cost_usd)
-        if not _is_image(data):
+        kind = _image_kind(data)
+        if kind is None:
+            ledger.append(est, output=bare, actual_usd=est.cost_usd)
             failures.append(f"candidate {number:02d}: response is not an image")
             continue
+        path = stem.with_suffix(_KIND_EXT[kind])
+        ledger.append(est, output=f"{bare}{path.suffix}", actual_usd=est.cost_usd)
         _write_atomic(path, data)
         written.append(path)
     return CandidatesResult(tuple(written), tuple(failures), refused)
@@ -200,8 +204,13 @@ def approve(cast_path: Path, name: str, candidate: str) -> Path:
         data = source.read_bytes()
     except OSError as exc:
         raise CastError(f"cast: cannot read {source.name}: {exc}") from exc
-    if not _is_image(data):
+    kind = _image_kind(data)
+    if kind is None:
         raise CastError(f"cast: {source.name} is not an image")
+    if _SUFFIX_KIND.get(source.suffix.lower()) != kind:
+        raise CastError(
+            f"cast: {source.name} holds {kind} data; rename it to {_KIND_EXT[kind]} and try again"
+        )
 
     rel = f"refs/{name}{source.suffix.lower()}"
     ref = cast_path.parent / rel

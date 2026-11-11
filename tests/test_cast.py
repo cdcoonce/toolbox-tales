@@ -307,9 +307,7 @@ def test_approve_refuses_symlink_inside_candidate_dir(tmp_path, candidate):
     assert not (cast.parent / "refs").exists()
 
 
-@pytest.mark.parametrize(
-    ("payload", "ext"), [(WEBP, ".webp"), (JPEG, ".jpg"), (PNG, ".png")]
-)
+@pytest.mark.parametrize(("payload", "ext"), [(WEBP, ".webp"), (JPEG, ".jpg"), (PNG, ".png")])
 def test_extension_from_sniffed_kind(tmp_path, payload, ext):
     result, ledger, cast = gen(tmp_path, Fake(payload=payload), n=1)
     d = cast.parent / "media/cast/Teeth"

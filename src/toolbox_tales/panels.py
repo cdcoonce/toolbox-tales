@@ -63,10 +63,18 @@ def _load_panels_config(config_path: Path) -> tuple[bool, str]:
     return references, aspect
 
 
+def _image_kind(data: bytes) -> str | None:
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "jpeg"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "webp"
+    return None
+
+
 def _is_image(data: bytes) -> bool:
-    if data.startswith((b"\x89PNG\r\n\x1a\n", b"\xff\xd8\xff")):
-        return True
-    return data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+    return _image_kind(data) is not None
 
 
 def _reference(n: int, name: str, value: str, cast_dir: Path) -> str:
@@ -85,7 +93,10 @@ def _reference(n: int, name: str, value: str, cast_dir: Path) -> str:
         data = path.read_bytes()
     except OSError as exc:
         raise fail(f"cannot read {value}: {exc}") from exc
-    return f"data:image/{mime};base64,{base64.b64encode(data).decode('ascii')}"
+    kind = _image_kind(data)
+    if kind is None:
+        raise fail(f"{value} is not a PNG, JPEG or WebP image")
+    return f"data:image/{kind};base64,{base64.b64encode(data).decode('ascii')}"
 
 
 def _speakers(panel: dict) -> list[str]:
