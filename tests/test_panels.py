@@ -13,7 +13,7 @@ from smoke_gate import require_smoke
 from toolbox_tales import render as render_mod
 from toolbox_tales.ledger import Ledger
 from toolbox_tales.oxen import OxenClient
-from toolbox_tales.panels import PanelsError, generate_panels
+from toolbox_tales.panels import PanelsError, _featured, generate_panels
 from toolbox_tales.spend import load_config
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -481,3 +481,56 @@ def test_speaker_named_in_prompt_appears_once(tmp_path):
     body = _featured_run(tmp_path, "Foreman admires the joint")
     assert body["prompt"].count("Foreman is @Image") == 1
     assert len(body["input_image"]) == 1
+
+
+@pytest.mark.parametrize("prompt", ["xGauge watches", "_Gauge watches"])
+def test_left_word_boundary_not_featured(tmp_path, prompt):
+    body = _featured_run(tmp_path, prompt)
+    assert len(body["input_image"]) == 1
+    assert "Gauge is @Image" not in body["prompt"]
+
+
+@pytest.mark.parametrize("prompt", ["Gauge2 rolls in", "2Gauge rolls in"])
+def test_digit_boundary_not_featured(tmp_path, prompt):
+    body = _featured_run(tmp_path, prompt)
+    assert len(body["input_image"]) == 1
+    assert "Gauge is @Image" not in body["prompt"]
+
+
+@pytest.mark.parametrize("prompt", [None, 123, "missing"])
+def test_non_string_prompt_adds_no_names_keeps_speakers(tmp_path, prompt):
+    def edit(cast):
+        for c in cast["characters"]:
+            (tmp_path / f"{c['name']}.png").write_bytes(PNG)
+            c["reference_image"] = f"{c['name']}.png"
+
+    manifest, cfg = make(tmp_path, panels_section=REFS_ON, cast_edit=edit)
+    doc = yaml.safe_load(manifest.read_text())
+    if prompt == "missing":
+        doc["panels"][4].pop("prompt", None)
+    else:
+        doc["panels"][4]["prompt"] = prompt
+    manifest.write_text(yaml.safe_dump(doc))
+    fake = Fake()
+    run_made(tmp_path, fake, manifest, cfg, panel=5)
+    body = fake.generates[0][3]
+    assert len(body["input_image"]) == 1
+    assert "Foreman is @Image1." in body["prompt"]
+
+
+@pytest.mark.parametrize("prompt", [None, 123, "missing"])
+def test_featured_non_string_prompt_returns_speakers(prompt):
+    panel = {"lines": [{"speaker": "Foreman", "text": "hi"}]}
+    if prompt != "missing":
+        panel["prompt"] = prompt
+    assert _featured(panel, ["Foreman", "Gauge"]) == ["Foreman"]
+
+
+def test_regex_metacharacters_in_name_are_literal():
+    panel = {"prompt": "AxB and C stand by"}
+    assert _featured(panel, ["A.B"]) == []
+    assert _featured({"prompt": "A.B stands by"}, ["A.B"]) == ["A.B"]
+
+
+def test_regex_special_name_does_not_crash():
+    assert _featured({"prompt": "C++ stands by, C"}, ["C++", "(x"]) == ["C++"]
