@@ -1,0 +1,121 @@
+cast_sheet: ../../cast/cast.yaml
+gotcha: 'A test suite was green, and every test named the defect it was meant to prevent.
+  Then someone put one of those defects back into the code on purpose, and the suite
+  stayed green. The tests had been passing all along without ever being able to fail:
+  one patched out the very call it was checking, another asserted on its own expected
+  string instead of the real output, and a third passed before the fix was even written.
+  A green check only means something if a red one was possible, and nobody had ever
+  seen these tests go red.'
+tool: detector-teeth-check
+cast:
+- Foreman
+- Gauge
+- Teeth
+panels:
+- prompt: Bright wood shop. A row of three inspection jigs on a bench, each with a
+    glowing green lamp. Foreman, in a dented hard hat and holding a clipboard, gestures
+    proudly. Gauge, a wooden marking gauge with a brass pin, squints at them, holding
+    a visibly cupped board. The jig lamps glow vivid emerald green, the only green
+    in the picture, a spot colour against the two-colour print.
+  image: media/episode/p01.png
+  overlay: Three jigs. Three green lights.
+  lines:
+  - speaker: Foreman
+    text: Three inspection jigs, three green lights, each labelled for the flaw it
+      catches. Ship it.
+    audio: media/voice/episode/p01-l01.mp3
+    duration: 5.976
+  - speaker: Gauge
+    text: Hold on. Let me feed a cupped board through on purpose.
+    audio: media/voice/episode/p01-l02.mp3
+    duration: 3.72
+- prompt: 'Close-up of the middle jig: the cupped board sits inside, the lamp still
+    green. Its feeler arm is held down with masking tape. On the third jig, the probe
+    touches a reference template, not the board. Gauge points, alarmed; Foreman''s
+    hard hat tilts in dismay. The jig lamps glow vivid emerald green, the only green
+    in the picture, a spot colour against the two-colour print.'
+  image: media/episode/p02.png
+  overlay: A bad board went in. Still green.
+  lines:
+  - speaker: Gauge
+    text: Still green. The cup jig's feeler is taped down. The length jig checks its
+      own template, not the board.
+    audio: media/voice/episode/p02-l01.mp3
+    duration: 6.816
+  - speaker: Foreman
+    text: And the twist jig?
+    audio: media/voice/episode/p02-l02.mp3
+    duration: 1.872
+  - speaker: Gauge
+    text: Twist jig was green before we even built it.
+    audio: media/voice/episode/p02-l03.mp3
+    duration: 3.24
+- prompt: Teeth, a steel table-saw blade guard with a stern visor face, short sturdy
+    arms and work boots, stands at the bench end beside the green-lit jigs, arms crossed.
+    Foreman looks at Teeth, sheepish. Warm shop light, sawdust in the air. The jig
+    lamps glow vivid emerald green, the only green in the picture, a spot colour against
+    the two-colour print.
+  image: media/episode/p03.png
+  overlay: detector-teeth-check
+  lines:
+  - speaker: Teeth
+    text: A green light means nothing if red was never possible. Who's seen these
+      go red?
+    audio: media/voice/episode/p03-l01.mp3
+    duration: 4.656
+  - speaker: Foreman
+    text: Nobody.
+    audio: media/voice/episode/p03-l02.mp3
+    duration: 1.872
+- prompt: Teeth feeds a twisted board into the first jig while a stack of deliberately
+    flawed boards (cupped, short, twisted) waits nearby. Gauge peels the tape off
+    the middle jig's feeler. One jig lamp flickers from green to red. Lamps that have
+    tripped glow vivid signal red, lamps still passing glow vivid emerald green; these
+    are the only red and green in the picture, spot colours against the two-colour
+    print.
+  image: media/episode/p04.png
+  overlay: Break it on purpose. It must go red.
+  lines:
+  - speaker: Teeth
+    text: So we break it. One bad board per jig, on purpose. Each must flash red at
+      its own jig, then the board comes out.
+    audio: media/voice/episode/p04-l01.mp3
+    duration: 7.656
+  - speaker: Gauge
+    text: And if it stays green?
+    audio: media/voice/episode/p04-l02.mp3
+    duration: 1.872
+  - speaker: Teeth
+    text: No teeth. Decoration. Fixed before it ships.
+    audio: media/voice/episode/p04-l03.mp3
+    duration: 3.576
+- prompt: The three jigs now glow red, each holding its flawed board. A fourth straight
+    board with only a pencil mark on it rests in a jig glowing green. Teeth nods,
+    visor gleaming; Foreman ticks a box on the clipboard. Lamps that have tripped
+    glow vivid signal red, lamps still passing glow vivid emerald green; these are
+    the only red and green in the picture, spot colours against the two-colour print.
+  image: media/episode/p05.png
+  overlay: A control board proves the tool is honest.
+  lines:
+  - speaker: Teeth
+    text: 'Then a control: a pencil mark no jig should care about. Proves I''m not
+      just breaking everything.'
+    audio: media/voice/episode/p05-l01.mp3
+    duration: 5.736
+  - speaker: Foreman
+    text: Three reds, one green. Now I believe them.
+    audio: media/voice/episode/p05-l02.mp3
+    duration: 3.456
+arrival_shot:
+  prompt: Starting from the still of the bench with three green-lit jigs, the shop
+    door swings open and Teeth, a steel table-saw blade guard with a stern visor face,
+    strides in on short work boots, sawdust swirling around it. It plants itself at
+    the end of the bench, crosses its sturdy arms, and its visor glints as it turns
+    toward the green lamps. Foreman and Gauge turn to face it. Slow push-in camera,
+    warm shop lighting. The jig lamps glow vivid emerald green.
+  reference: Teeth
+  after_panel: 2
+  video: media/episode/arrival.mp4
+  model: kling-video-o3-omni
+  duration: 5.042
+render: media/episode/episode.mp4

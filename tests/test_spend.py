@@ -128,7 +128,7 @@ def test_committed_config_loads():
     root = Path(__file__).resolve().parent.parent
     c = load_config(root / "config" / "spend.toml")
     assert (c.per_call_cap_usd, c.total_cap_usd) == (3.0, 25.0)
-    assert c.image_model == "flux-2-dev"
+    assert c.image_model == "bytedance-seedream-5-5"
 
 
 def test_committed_ledger_is_well_formed():

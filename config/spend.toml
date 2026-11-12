@@ -3,7 +3,7 @@ per_call_cap_usd = 3.0
 total_cap_usd = 25.0
 
 [models]
-image = "flux-2-dev"
+image = "bytedance-seedream-5-5"   # flux-2-dev provider down (502) 2026-11-11; cast refs were drawn by flux-2-dev
 video = "kling-video-o3-omni"   # live 2026-11-01: $0.1456/s base, 3-15 s, start/tail image
 
 [script]

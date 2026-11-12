@@ -22,3 +22,14 @@ timestamp,model,kind,quantity,estimated_usd,actual_usd,output
 2026-11-11T18:57:47.864871+00:00,flux-2-dev,image,1,0.014,0.014,media/cast/Logbook/c02.webp
 2026-11-11T18:57:54.191788+00:00,flux-2-dev,image,1,0.014,0.014,media/cast/Logbook/c03.webp
 2026-11-11T18:58:00.478184+00:00,flux-2-dev,image,1,0.014,0.014,media/cast/Logbook/c04.webp
+2026-11-12T01:11:03.289794+00:00,claude-opus-5-5,text,1862,0.176,0.06658800000000001,episodes/ep01/episode.yaml
+2026-11-12T01:34:47.993896+00:00,bytedance-seedream-4-5,image,1,0.04,0.04,probe: provider check (not saved)
+2026-11-12T01:37:34.883377+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p01.png
+2026-11-12T01:38:30.382048+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p01.png
+2026-11-12T01:42:02.283064+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p03.png
+2026-11-12T01:42:59.834301+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p05.png
+2026-11-12T01:43:37.366621+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p02.png
+2026-11-12T01:44:02.888488+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p04.png
+2026-11-12T01:44:56.220203+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p03.png
+2026-11-12T01:45:27.789220+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p05.png
+2026-11-12T01:45:47.076482+00:00,kling-video-o3-omni,video,5,0.728,0.728,queue:61a1b045-d331-4c79-929c-2770398fe36d

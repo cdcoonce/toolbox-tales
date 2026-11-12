@@ -252,3 +252,10 @@ def test_cli_invalid_manifest_exits_1(tmp_path, capsys, ep):
 def test_cli_missing_file_exits_1_with_load(tmp_path, capsys):
     assert main(["validate", str(tmp_path / "nope.yaml")]) == 1
     assert capsys.readouterr().out.startswith("load: ")
+
+
+def test_committed_episode_1_is_valid():
+    root = Path(__file__).resolve().parent.parent
+    path = root / "episodes" / "ep01" / "episode.yaml"
+    assert load_and_validate(path) == []
+    assert yaml.safe_load(path.read_text())["tool"] == "detector-teeth-check"
