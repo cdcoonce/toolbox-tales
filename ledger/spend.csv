@@ -33,3 +33,11 @@ timestamp,model,kind,quantity,estimated_usd,actual_usd,output
 2026-11-12T01:44:56.220203+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p03.png
 2026-11-12T01:45:27.789220+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p05.png
 2026-11-12T01:45:47.076482+00:00,kling-video-o3-omni,video,5,0.728,0.728,queue:61a1b045-d331-4c79-929c-2770398fe36d
+2026-11-12T02:00:28.665591+00:00,claude-opus-5-5,text,1799,0.176,0.065816,episodes/ep02/episode.yaml
+2026-11-12T02:02:12.587262+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p01.png
+2026-11-12T02:02:39.959682+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p02.png
+2026-11-12T02:03:07.320684+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p03.png
+2026-11-12T02:03:32.051996+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p04.png
+2026-11-12T02:04:01.446437+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p05.png
+2026-11-12T02:05:34.207199+00:00,bytedance-seedream-5-5,image,1,0.036,0.036,media/episode/p03.png
+2026-11-12T02:05:50.282462+00:00,kling-video-o3-omni,video,5,0.728,0.728,queue:a0e81d16-2e61-4554-99d3-70d3ba490ea2

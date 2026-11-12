@@ -1,0 +1,110 @@
+cast_sheet: ../../cast/cast.yaml
+gotcha: 'Every working session starts with no memory of the last one. One session
+  finished real work late in the day: a fix merged, a decision made, a dead end ruled
+  out. Nobody wrote down where things stood. The next morning''s session started blank,
+  saw the old problem, rebuilt infrastructure that already existed, re-proposed the
+  plan that had been rejected the night before, and walked straight back into the
+  dead end. A whole day went into redoing yesterday. The work was never the problem;
+  the hand-over was.'
+tool: handoff
+cast:
+- Foreman
+- Gauge
+- Lockout
+- Logbook
+- Teeth
+panels:
+- prompt: Warm evening light in a cluttered wood shop. Foreman, in a dented hard hat
+    and holding a clipboard, points at a finished plain wooden jig (a clamping frame,
+    an object with no face), a clamped oak joint and a walnut board with a big knot.
+    Gauge, a wooden marking gauge with a brass pin, yawns and reaches for the light
+    switch.
+  image: media/episode/p01.png
+  overlay: 'Late shift: real work done'
+  lines:
+  - speaker: Foreman
+    text: Jig's built, the oak joint's glued, and that walnut board splits at the
+      knot. Don't use it.
+    audio: media/voice/episode/p01-l01.mp3
+    duration: 6.576
+  - speaker: Gauge
+    text: Good day. Lights off, we'll remember.
+    audio: media/voice/episode/p01-l02.mp3
+    duration: 3.24
+- prompt: Cool morning light in the same shop, with sawdust swept and the plain wooden
+    jig hidden under a tarp. Teeth, a steel blade guard with a stern visor face, squints
+    at the clamped joint. Gauge scratches its head with its pencil.
+  image: media/episode/p02.png
+  overlay: 'Next morning: nobody remembers'
+  lines:
+  - speaker: Teeth
+    text: Fresh shift. Wobbly joint on the bench. Who knows what happened here?
+    audio: media/voice/episode/p02-l01.mp3
+    duration: 4.248
+  - speaker: Gauge
+    text: No idea. Let's build a jig to fix it.
+    audio: media/voice/episode/p02-l02.mp3
+    duration: 3.168
+- prompt: Chaotic midday scene. Two identical plain wooden jigs (simple clamping frames
+    of pine and steel screws, objects, not characters, no faces) stand side by side
+    on the bench, one half-uncovered from a tarp. Teeth appears only once. Lockout,
+    a red padlock with a blank tag, waves its arms. The cracked walnut board with
+    the big knot is back on the bench, ready to be cut. Teeth points in alarm. Foreman
+    facepalms.
+  image: media/episode/p03.png
+  overlay: A whole day spent redoing yesterday
+  lines:
+  - speaker: Lockout
+    text: Stop! There's already a jig under that tarp. You just built a second one.
+    audio: media/voice/episode/p03-l01.mp3
+    duration: 5.112
+  - speaker: Teeth
+    text: And Gauge is grabbing that cracked walnut again!
+    audio: media/voice/episode/p03-l02.mp3
+    duration: 3.024
+  - speaker: Foreman
+    text: The work was fine. The hand-over was missing.
+    audio: media/voice/episode/p03-l03.mp3
+    duration: 3.432
+- prompt: Logbook, a cloth-bound shift logbook with a worn spine and a friendly face,
+    hangs from a loop of string on a nail by the shop door. Its pages are open to
+    a single short note of illegible pencil scribbles. Gauge looks on, curious.
+  image: media/episode/p04.png
+  overlay: handoff
+  lines:
+  - speaker: Logbook
+    text: 'Hi, I''m Logbook. At the end of every shift, I get one short note: what''s
+      finished, what was decided and why, what''s open, and the exact next step.'
+    audio: media/voice/episode/p04-l01.mp3
+    duration: 10.68
+  - speaker: Gauge
+    text: Won't the old notes pile up?
+    audio: media/voice/episode/p04-l02.mp3
+    duration: 1.944
+- prompt: Next morning at the shop door. Teeth reads Logbook's single fresh page before
+    touching any tool, while the old page is crumpled in a bin. The tarp is pulled
+    off the existing jig, and the walnut board is set aside with a red X chalked on
+    it.
+  image: media/episode/p05.png
+  overlay: Read the note before touching anything
+  lines:
+  - speaker: Logbook
+    text: No. Each new note replaces the old one, so I never go stale. Read me first.
+    audio: media/voice/episode/p05-l01.mp3
+    duration: 7.608
+  - speaker: Teeth
+    text: Then we start where we stopped, not from zero.
+    audio: media/voice/episode/p05-l02.mp3
+    duration: 2.904
+arrival_shot:
+  prompt: Start from the chaotic shop with two duplicate jigs. The shop door creaks
+    open and a loop of string swings into frame. Logbook, a friendly cloth-bound shift
+    logbook, drops gently onto a nail by the door and sways. Its cover flips open
+    and the pages flutter to a single neat note, and it smiles at the crew as dust
+    motes drift in the morning light.
+  reference: Logbook
+  after_panel: 3
+  video: media/episode/arrival.mp4
+  model: kling-video-o3-omni
+  duration: 5.042
+render: media/episode/episode.mp4
