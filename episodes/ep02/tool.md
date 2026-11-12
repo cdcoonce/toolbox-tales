@@ -1,0 +1,1 @@
+handoff writes a short, current note at the end of every session: what is finished, what was decided and why, what is still open, and the exact next step. It replaces the old note instead of piling onto it, so it never goes stale. The next session reads it first, before touching anything, and picks up exactly where the last one stopped instead of starting from zero.

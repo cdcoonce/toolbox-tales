@@ -259,3 +259,10 @@ def test_committed_episode_1_is_valid():
     path = root / "episodes" / "ep01" / "episode.yaml"
     assert load_and_validate(path) == []
     assert yaml.safe_load(path.read_text())["tool"] == "detector-teeth-check"
+
+
+def test_committed_episode_2_is_valid():
+    root = Path(__file__).resolve().parent.parent
+    path = root / "episodes" / "ep02" / "episode.yaml"
+    assert load_and_validate(path) == []
+    assert yaml.safe_load(path.read_text())["tool"] == "handoff"
