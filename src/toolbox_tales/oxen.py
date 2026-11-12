@@ -37,9 +37,12 @@ class Prices:
     raw: dict = field(default_factory=dict)
 
 
+REQUEST_TIMEOUT_S = 180
+
+
 def _default_transport(request: urllib.request.Request) -> tuple[int, bytes]:
     try:
-        with urllib.request.urlopen(request, timeout=30) as resp:
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_S) as resp:
             return resp.status, resp.read()
     except urllib.error.HTTPError as exc:
         return exc.code, exc.read()
