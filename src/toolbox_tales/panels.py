@@ -7,6 +7,7 @@ so every field is type-checked. The manifest file is never modified.
 
 import base64
 import os
+import re
 import tempfile
 import tomllib
 from dataclasses import dataclass
@@ -109,6 +110,23 @@ def _speakers(panel: dict) -> list[str]:
     return seen
 
 
+def _featured(panel: dict, names: list[str]) -> list[str]:
+    """Speakers first, then cast names the prompt mentions as whole words, by first position."""
+    featured = _speakers(panel)
+    prompt = panel.get("prompt")
+    if not isinstance(prompt, str):
+        return featured
+    found: list[tuple[int, int, str]] = []
+    for order, name in enumerate(names):
+        if name in featured:
+            continue
+        pattern = r"(?<![A-Za-z0-9_])" + re.escape(name) + r"(?![A-Za-z0-9_])"
+        match = re.search(pattern, prompt)
+        if match:
+            found.append((match.start(), order, name))
+    return featured + [name for _, _, name in sorted(found)]
+
+
 def _build_request(
     n: int, panel: dict, base: Path, cast: dict[str, dict], cast_dir: Path, style: str, refs: bool
 ) -> _Request:
@@ -126,7 +144,7 @@ def _build_request(
     referenced: list[str] = []
     described: list[tuple[str, str]] = []
     input_images: list[str] = []
-    for name in _speakers(panel):
+    for name in _featured(panel, list(cast)):
         char = cast.get(name, {})
         ref = char.get("reference_image")
         if refs and isinstance(ref, str) and ref:

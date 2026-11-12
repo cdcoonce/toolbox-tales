@@ -13,7 +13,7 @@ from smoke_gate import require_smoke
 from toolbox_tales import render as render_mod
 from toolbox_tales.ledger import Ledger
 from toolbox_tales.oxen import OxenClient
-from toolbox_tales.panels import PanelsError, generate_panels
+from toolbox_tales.panels import PanelsError, _featured, generate_panels
 from toolbox_tales.spend import load_config
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -401,3 +401,136 @@ def test_render_uses_generated_images(tmp_path):
     plan = render_mod.build_plan(yaml.safe_load(manifest.read_text()), tmp_path)
     panels = [s for s in plan.segments if s.kind == "panel"]
     assert len(panels) == 5 and all(s.source is not None for s in panels)
+
+
+def _featured_run(tmp_path, prompt, refs=("Teeth", "Gauge", "Foreman"), section=REFS_ON):
+    """Run panel 5 (only Foreman speaks) with a custom prompt; return the request body."""
+
+    def edit(cast):
+        for c in cast["characters"]:
+            if c["name"] in refs:
+                f = f"{c['name']}.png"
+                (tmp_path / f).write_bytes(PNG)
+                c["reference_image"] = f
+
+    manifest, cfg = make(tmp_path, panels_section=section, cast_edit=edit)
+    doc = yaml.safe_load(manifest.read_text())
+    doc["panels"][4]["prompt"] = prompt
+    manifest.write_text(yaml.safe_dump(doc))
+    fake = Fake()
+    run_made(tmp_path, fake, manifest, cfg, panel=5)
+    return fake.generates[0][3]
+
+
+def test_named_non_speaker_gets_reference(tmp_path):
+    body = _featured_run(tmp_path, "Gauge watches the bench closely")
+    assert len(body["input_image"]) == 2  # Foreman (speaker) then Gauge
+    assert "\nForeman is @Image1.\nGauge is @Image2." in body["prompt"]
+
+
+def test_featured_order_speakers_then_prompt_position(tmp_path):
+    body = _featured_run(tmp_path, "Gauge peers past Teeth at the bench")
+    # sheet order is Teeth, Gauge; prompt order is Gauge, Teeth
+    assert "\nForeman is @Image1.\nGauge is @Image2.\nTeeth is @Image3." in body["prompt"]
+    assert len(body["input_image"]) == 3
+
+
+@pytest.mark.parametrize("prompt", ["Gauges stack up", "a gauge on the wall", "Gauge_x rolls in"])
+def test_whole_word_only_not_featured(tmp_path, prompt):
+    body = _featured_run(tmp_path, prompt)
+    assert len(body["input_image"]) == 1
+    assert "Gauge is @Image" not in body["prompt"]
+
+
+@pytest.mark.parametrize(
+    "prompt", ["Gauge, at the bench", "ahead (Gauge) waits", "stands by Gauge"]
+)
+def test_whole_word_featured(tmp_path, prompt):
+    body = _featured_run(tmp_path, prompt)
+    assert "Gauge is @Image2." in body["prompt"]
+
+
+def test_named_non_speaker_without_reference_described(tmp_path):
+    body = _featured_run(tmp_path, "Gauge watches the bench", refs=("Foreman",))
+    assert len(body["input_image"]) == 1
+    assert "Gauge is @Image" not in body["prompt"]
+    assert "\nGauge: " in body["prompt"]
+
+
+def test_named_non_speaker_references_off_described(tmp_path):
+    body = _featured_run(tmp_path, "Gauge watches the bench", section="")
+    assert "input_image" not in body
+    assert "\nGauge: " in body["prompt"]
+
+
+def test_named_non_speaker_missing_reference_fails_before_any_call(tmp_path):
+    def edit(cast):
+        cast["characters"][1]["reference_image"] = "refs/none.png"
+
+    manifest, cfg = make(tmp_path, panels_section=REFS_ON, cast_edit=edit)
+    doc = yaml.safe_load(manifest.read_text())
+    doc["panels"][4]["prompt"] = "Gauge watches the bench"
+    manifest.write_text(yaml.safe_dump(doc))
+    fake = Fake()
+    with pytest.raises(PanelsError, match=r"panel 5: reference for Gauge"):
+        run_made(tmp_path, fake, manifest, cfg, panel=5)
+    assert fake.calls == []
+
+
+def test_speaker_named_in_prompt_appears_once(tmp_path):
+    body = _featured_run(tmp_path, "Foreman admires the joint")
+    assert body["prompt"].count("Foreman is @Image") == 1
+    assert len(body["input_image"]) == 1
+
+
+@pytest.mark.parametrize("prompt", ["xGauge watches", "_Gauge watches"])
+def test_left_word_boundary_not_featured(tmp_path, prompt):
+    body = _featured_run(tmp_path, prompt)
+    assert len(body["input_image"]) == 1
+    assert "Gauge is @Image" not in body["prompt"]
+
+
+@pytest.mark.parametrize("prompt", ["Gauge2 rolls in", "2Gauge rolls in"])
+def test_digit_boundary_not_featured(tmp_path, prompt):
+    body = _featured_run(tmp_path, prompt)
+    assert len(body["input_image"]) == 1
+    assert "Gauge is @Image" not in body["prompt"]
+
+
+@pytest.mark.parametrize("prompt", [None, 123, "missing"])
+def test_non_string_prompt_adds_no_names_keeps_speakers(tmp_path, prompt):
+    def edit(cast):
+        for c in cast["characters"]:
+            (tmp_path / f"{c['name']}.png").write_bytes(PNG)
+            c["reference_image"] = f"{c['name']}.png"
+
+    manifest, cfg = make(tmp_path, panels_section=REFS_ON, cast_edit=edit)
+    doc = yaml.safe_load(manifest.read_text())
+    if prompt == "missing":
+        doc["panels"][4].pop("prompt", None)
+    else:
+        doc["panels"][4]["prompt"] = prompt
+    manifest.write_text(yaml.safe_dump(doc))
+    fake = Fake()
+    run_made(tmp_path, fake, manifest, cfg, panel=5)
+    body = fake.generates[0][3]
+    assert len(body["input_image"]) == 1
+    assert "Foreman is @Image1." in body["prompt"]
+
+
+@pytest.mark.parametrize("prompt", [None, 123, "missing"])
+def test_featured_non_string_prompt_returns_speakers(prompt):
+    panel = {"lines": [{"speaker": "Foreman", "text": "hi"}]}
+    if prompt != "missing":
+        panel["prompt"] = prompt
+    assert _featured(panel, ["Foreman", "Gauge"]) == ["Foreman"]
+
+
+def test_regex_metacharacters_in_name_are_literal():
+    panel = {"prompt": "AxB and C stand by"}
+    assert _featured(panel, ["A.B"]) == []
+    assert _featured({"prompt": "A.B stands by"}, ["A.B"]) == ["A.B"]
+
+
+def test_regex_special_name_does_not_crash():
+    assert _featured({"prompt": "C++ stands by, C"}, ["C++", "(x"]) == ["C++"]

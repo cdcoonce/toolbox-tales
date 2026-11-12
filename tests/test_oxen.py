@@ -249,3 +249,33 @@ def test_download_non_2xx():
     c, _ = seq_client((403, b"x"))
     with pytest.raises(OxenError, match="HTTP 403 downloading result"):
         c.download("https://signed.example/r.mp4")
+
+
+def test_default_transport_uses_long_timeout(monkeypatch):
+    import urllib.request
+
+    from toolbox_tales import oxen
+
+    seen = {}
+
+    class Resp:
+        status = 200
+
+        def read(self):
+            return b"{}"
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    def fake_urlopen(request, **kwargs):
+        seen.update(kwargs)
+        return Resp()
+
+    monkeypatch.setattr(oxen.urllib.request, "urlopen", fake_urlopen)
+    req = urllib.request.Request("https://example.invalid/x")
+    assert oxen._default_transport(req) == (200, b"{}")
+    assert seen == {"timeout": 180}
+    assert oxen.REQUEST_TIMEOUT_S == 180

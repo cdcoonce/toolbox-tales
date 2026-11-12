@@ -1,0 +1,120 @@
+{
+  "runner": "pytest",
+  "test_command": [
+    "uv",
+    "run",
+    "pytest",
+    "-q",
+    "tests"
+  ],
+  "collect_command": [
+    "uv",
+    "run",
+    "pytest",
+    "--collect-only",
+    "-q",
+    "tests"
+  ],
+  "mutants": [
+    {
+      "label": "1 named non-speakers get no reference",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "for name in _featured(panel, list(cast)):",
+      "replace": "for name in _speakers(panel):"
+    },
+    {
+      "label": "2 prompt-named characters ahead of speakers",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "return featured + [name for _, _, name in sorted(found)]",
+      "replace": "return [name for _, _, name in sorted(found)] + featured"
+    },
+    {
+      "label": "3 non-speakers ordered by sheet order not prompt position",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "return featured + [name for _, _, name in sorted(found)]",
+      "replace": "return featured + [name for _, _, name in sorted(found, key=lambda t: t[1])]"
+    },
+    {
+      "label": "4 left word boundary dropped",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "r\"(?<![A-Za-z0-9_])\" + re.escape(name) + r\"(?![A-Za-z0-9_])\"",
+      "replace": "re.escape(name) + r\"(?![A-Za-z0-9_])\""
+    },
+    {
+      "label": "5 right word boundary dropped",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "r\"(?<![A-Za-z0-9_])\" + re.escape(name) + r\"(?![A-Za-z0-9_])\"",
+      "replace": "r\"(?<![A-Za-z0-9_])\" + re.escape(name)"
+    },
+    {
+      "label": "6 match is case-insensitive",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "match = re.search(pattern, prompt)",
+      "replace": "match = re.search(pattern, prompt, re.IGNORECASE)"
+    },
+    {
+      "label": "7 speaker named in prompt listed twice",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "        if name in featured:\n            continue\n",
+      "replace": "        if False:\n            continue\n"
+    },
+    {
+      "label": "8 non-string prompt raises",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "    if not isinstance(prompt, str):\n        return featured\n",
+      "replace": "    if False:\n        return featured\n"
+    },
+    {
+      "label": "9 named non-speaker reference never validated",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "if refs and isinstance(ref, str) and ref:",
+      "replace": "if refs and isinstance(ref, str) and ref and name in _speakers(panel):"
+    },
+    {
+      "label": "10 request timeout back to 30 s",
+      "file": "../../src/toolbox_tales/oxen.py",
+      "oracle": "real",
+      "find": "timeout=REQUEST_TIMEOUT_S) as resp",
+      "replace": "timeout=30) as resp"
+    },
+    {
+      "label": "11 [control] featured docstring wording",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "expect": "survived",
+      "why": "A docstring is documentation only: no code or test reads _featured.__doc__, so behaviour is identical on every path. Ungraded detail (a bare comment edit was not used because it is not a code mutation).",
+      "find": "\"\"\"Speakers first, then cast names the prompt mentions as whole words, by first position.\"\"\"",
+      "replace": "\"\"\"Speakers, then cast names that the prompt mentions as whole words, by position.\"\"\""
+    },
+    {
+      "label": "12 regex-special names not escaped",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "re.escape(name)",
+      "replace": "name"
+    },
+    {
+      "label": "13 digit not a word character on boundaries",
+      "file": "../../src/toolbox_tales/panels.py",
+      "oracle": "real",
+      "find": "r\"(?<![A-Za-z0-9_])\" + re.escape(name) + r\"(?![A-Za-z0-9_])\"",
+      "replace": "r\"(?<![A-Za-z_])\" + re.escape(name) + r\"(?![A-Za-z_])\""
+    },
+    {
+      "label": "14 REQUEST_TIMEOUT_S constant value 30",
+      "file": "../../src/toolbox_tales/oxen.py",
+      "oracle": "real",
+      "find": "REQUEST_TIMEOUT_S = 180",
+      "replace": "REQUEST_TIMEOUT_S = 30"
+    }
+  ]
+}
