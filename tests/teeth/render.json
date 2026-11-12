@@ -90,8 +90,8 @@
       "label": "11 silent audio track omitted",
       "file": "../../src/toolbox_tales/render.py",
       "oracle": "real",
-      "find": "        \"-f\",\n        \"lavfi\",\n        \"-i\",\n        f\"anullsrc=r=44100:cl=stereo:d={dur}\",\n        \"-vf\",",
-      "replace": "        \"-vf\","
+      "find": "silence = [\"-f\", \"lavfi\", \"-i\", f\"anullsrc=r=44100:cl=stereo:d={dur}\"]",
+      "replace": "silence: list[str] = []"
     },
     {
       "label": "12 [control] placeholder colour hex",

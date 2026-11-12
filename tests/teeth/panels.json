@@ -118,8 +118,8 @@
       "label": "15 refusal exits 1",
       "file": "../../src/toolbox_tales/cli.py",
       "oracle": "real",
-      "find": "print(f\"spend: {result.refused}\")\n        return 4",
-      "replace": "print(f\"spend: {result.refused}\")\n        return 1"
+      "find": "print(f\"panels: {failure}\")\n    if result.refused is not None:\n        print(f\"spend: {result.refused}\")\n        return 4",
+      "replace": "print(f\"panels: {failure}\")\n    if result.refused is not None:\n        print(f\"spend: {result.refused}\")\n        return 1"
     },
     {
       "label": "16 [control] atomic temp prefix renamed",

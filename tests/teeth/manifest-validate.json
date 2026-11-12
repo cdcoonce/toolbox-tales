@@ -97,8 +97,8 @@
       "label": "12 CLI returns 0 when errors exist",
       "file": "../../src/toolbox_tales/cli.py",
       "oracle": "real",
-      "find": "print(\"\\n\".join(errors))\n        return 1",
-      "replace": "print(\"\\n\".join(errors))\n        return 0"
+      "find": "print(\"\\n\".join(errors))\n        return 1\n    print(\"valid\")",
+      "replace": "print(\"\\n\".join(errors))\n        return 0\n    print(\"valid\")"
     },
     {
       "label": "13 [control] CLI subcommand help text",
